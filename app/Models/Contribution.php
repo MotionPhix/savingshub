@@ -1,0 +1,168 @@
+<?php
+
+namespace App\Models;
+
+use App\Traits\BootUuid;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Contribution extends Model
+{
+  use HasFactory, BootUuid, SoftDeletes;
+
+  protected $fillable = [
+    'group_member_id',
+    'group_id',
+    'user_id',
+    'amount',
+    'contribution_date',
+    'status',
+    'type',
+    'payment_method',
+    'transaction_reference',
+    'is_verified',
+    'metadata'
+  ];
+
+  protected $casts = [
+    'amount' => 'decimal:2',
+    'contribution_date' => 'date',
+    'is_verified' => 'boolean',
+    'metadata' => 'array'
+  ];
+
+  protected $hidden = [
+    'metadata'
+  ];
+
+  // Relationships
+  public function groupMember(): BelongsTo
+  {
+    return $this->belongsTo(GroupMember::class);
+  }
+
+  public function group(): BelongsTo
+  {
+    return $this->belongsTo(Group::class);
+  }
+
+  public function user(): BelongsTo
+  {
+    return $this->belongsTo(User::class);
+  }
+
+  // Scopes
+  public function scopePaid($query)
+  {
+    return $query->where('status', 'paid');
+  }
+
+  public function scopePending($query)
+  {
+    return $query->where('status', 'pending');
+  }
+
+  public function scopeVerified($query)
+  {
+    return $query->where('is_verified', true);
+  }
+
+  // Status Checks
+  public function isPaid(): bool
+  {
+    return $this->status === 'paid';
+  }
+
+  public function isPending(): bool
+  {
+    return $this->status === 'pending';
+  }
+
+  public function isOverdue(): bool
+  {
+    return $this->status === 'overdue' ||
+      ($this->status === 'pending' && now()->isAfter($this->contribution_date));
+  }
+
+  // Contribution Lifecycle Management
+  public function markAsPaid(string $paymentMethod = null, string $transactionReference = null)
+  {
+    $this->update([
+      'status' => 'paid',
+      'payment_method' => $paymentMethod,
+      'transaction_reference' => $transactionReference,
+      'is_verified' => true
+    ]);
+
+    // Update group member contribution stats
+    $this->groupMember->updateContributionStats($this);
+  }
+
+  public function markAsPending()
+  {
+    $this->update([
+      'status' => 'pending',
+      'is_verified' => false
+    ]);
+  }
+
+  public function markAsOverdue()
+  {
+    $this->update([
+      'status' => 'overdue'
+    ]);
+  }
+
+  // Metadata Management
+  public function addMetadata(string $key, $value)
+  {
+    $metadata = $this->metadata ?? [];
+    $metadata[$key] = $value;
+    $this->metadata = $metadata;
+    $this->save();
+  }
+
+  public function getMetadata(string $key, $default = null)
+  {
+    return $this->metadata[$key] ?? $default;
+  }
+
+  // Computed Attributes
+  public function getDaysOverdueAttribute(): int
+  {
+    return $this->isOverdue()
+      ? now()->diffInDays($this->contribution_date)
+      : 0;
+  }
+
+  // Static Methods for Contribution Management
+  public static function createContribution(
+    GroupMember $groupMember,
+    float       $amount,
+    ?Carbon     $contributionDate = null,
+    string      $type = 'regular'
+  ): self {
+    return self::create([
+      'group_member_id' => $groupMember->id,
+      'group_id' => $groupMember->group_id,
+      'user_id' => $groupMember->user_id,
+      'amount' => $amount,
+      'contribution_date' => $contributionDate ?? now(),
+      'type' => $type,
+      'status' => 'pending'
+    ]);
+  }
+
+  // Penalty Calculation
+  public function calculateOverduePenalty(float $penaltyRate = 0.01): float
+  {
+    if (!$this->isOverdue()) {
+      return 0;
+    }
+
+    return $this->amount * $this->daysOverdue * $penaltyRate;
+  }
+}
