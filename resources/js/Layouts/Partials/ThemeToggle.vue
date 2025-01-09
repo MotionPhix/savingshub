@@ -20,13 +20,13 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/Components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem
-} from '@/components/ui/dropdown'
+} from '@/Components/ui/dropdown-menu'
 import { SunIcon, MoonIcon } from 'lucide-vue-next'
 
 const theme = ref('light')

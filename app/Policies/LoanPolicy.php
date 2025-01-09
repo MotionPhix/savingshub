@@ -2,33 +2,72 @@
 
 namespace App\Policies;
 
+use App\Models\Group;
 use App\Models\Loan;
 use App\Models\User;
 
 class LoanPolicy
 {
-  public function viewAny(User $user)
+  public function viewAny(User $user, Group $group)
   {
-    return true; // Allow all users to view loans
+    // Check if user is a member of the group
+    return $group->members()
+      ->where('user_id', $user->id)
+      ->exists();
   }
 
   public function view(User $user, Loan $loan)
   {
-    return $user->groupMember->id === $loan->group_member_id;
+    // User can view if they are the loan owner or a group admin
+    return $loan->user_id === $user->id ||
+      $loan->group->members()
+        ->where('user_id', $user->id)
+        ->where('role', 'admin')
+        ->exists();
   }
 
-  public function create(User $user)
+  public function create(User $user, Group $group)
   {
-    return true; // Allow all users to create loans
+    // Check if user is an active member of the group
+    $membership = $group->members()
+      ->where('user_id', $user->id)
+      ->where('status', 'active')
+      ->first();
+
+    return $membership && !$membership->hasActiveLoan();
   }
 
   public function update(User $user, Loan $loan)
   {
-    return $user->groupMember->id === $loan->group_member_id;
+    // Only group admins can update loan details
+    return $loan->group->members()
+      ->where('user_id', $user->id)
+      ->where('role', 'admin')
+      ->exists();
   }
 
-  public function delete(User $user, Loan $loan)
+  public function approve(User $user, Loan $loan)
   {
-    return $user->groupMember->id === $loan->group_member_id;
+    // Only group admins can approve loans
+    return $loan->group->members()
+      ->where('user_id', $user->id)
+      ->where('role', 'admin')
+      ->exists();
+  }
+
+  public function makePayment(User $user, Loan $loan)
+  {
+    // User can make payment if they are the loan owner
+    return $loan->user_id === $user->id &&
+      $loan->status === 'active';
+  }
+
+  public function restructure(User $user, Loan $loan)
+  {
+    // Only group admins can restructure loans
+    return $loan->group->members()
+      ->where('user_id', $user->id)
+      ->where('role', 'admin')
+      ->exists();
   }
 }

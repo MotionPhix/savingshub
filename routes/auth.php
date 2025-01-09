@@ -13,9 +13,12 @@ use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\LoanController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+// Guest Routes (No authentication required)
 Route::middleware('guest')->group(function () {
+  // Authentication and Registration Routes
   Route::get('register', [RegisteredUserController::class, 'create'])
     ->name('register');
 
@@ -26,6 +29,7 @@ Route::middleware('guest')->group(function () {
 
   Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
+  // Password Reset Routes
   Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
 
@@ -39,7 +43,9 @@ Route::middleware('guest')->group(function () {
     ->name('password.store');
 });
 
-Route::middleware('auth')->group(function () {
+// Authenticated Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+  // Email Verification Routes
   Route::get('verify-email', EmailVerificationPromptController::class)
     ->name('verification.notice');
 
@@ -47,26 +53,98 @@ Route::middleware('auth')->group(function () {
     ->middleware(['signed', 'throttle:6,1'])
     ->name('verification.verify');
 
-  Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-    ->middleware('throttle:6,1')
+  Route::post(
+    'email/verification-notification',
+    [EmailVerificationNotificationController::class, 'store']
+  )->middleware('throttle:6,1')
     ->name('verification.send');
 
-  Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
-    ->name('password.confirm');
+  // Password Management Routes
+  Route::get(
+    'confirm-password',
+    [ConfirmablePasswordController::class, 'show']
+  )->name('password.confirm');
 
-  Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+  Route::post(
+    'confirm-password',
+    [ConfirmablePasswordController::class, 'store']
+  );
 
-  Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+  Route::put(
+    'password',
+    [PasswordController::class, 'update']
+  )->name('password.update');
 
-  Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-    ->name('logout');
+  Route::post(
+    'logout',
+    [AuthenticatedSessionController::class, 'destroy']
+  )->name('logout');
 
-  /* ------------------------------------------------------------------------------ */
+  // Unrestricted Routes (Dashboard and Profile)
+  Route::get(
+    '/',
+    [DashboardController::class, 'index']
+  )->name('dashboard');
 
-  Route::resource('groups', GroupController::class);
-  Route::resource('contributions', ContributionController::class);
-  Route::resource('loans', LoanController::class);
+  Route::get(
+    '/profile',
+    [ProfileController::class, 'edit']
+  )->name('profile.edit');
 
-  Route::get('/', [DashboardController::class, 'index'])
-    ->name('dashboard');
+  Route::patch(
+    '/profile',
+    [ProfileController::class, 'update']
+  )->name('profile.update');
+
+  Route::delete(
+    '/profile',
+    [ProfileController::class, 'destroy']
+  )->name('profile.destroy');
+
+  // Group Routes (Requires active group middleware)
+  Route::middleware('active.group')->group(function () {
+    // Contributions Routes
+    Route::prefix('contributions')->name('contributions.')->group(function () {
+      Route::get('/', [ContributionController::class, 'index'])
+        ->name('index');
+      Route::get('/create', [ContributionController::class, 'create'])
+        ->name('create');
+      Route::post('/', [ContributionController::class, 'store'])
+        ->name('store');
+      Route::get('/{contribution}', [ContributionController::class, 'show'])
+        ->name('show');
+      Route::put('/{contribution}', [ContributionController::class, 'update'])
+        ->name('update');
+      Route::delete('/{contribution}', [ContributionController::class, 'destroy'])
+        ->name('destroy');
+    });
+
+    // Loans Routes
+    Route::prefix('loans')->name('loans.')->group(function () {
+      Route::get('/', [LoanController::class, 'index'])
+        ->name('index');
+      Route::get('/create', [LoanController::class, 'create'])
+        ->name('create');
+      Route::post('/', [LoanController::class, 'store'])
+        ->name('store');
+      Route::get('/{loan}', [LoanController::class, 'show'])
+        ->name('show');
+      Route::put('/{loan}', [LoanController::class, 'update'])
+        ->name('update');
+      Route::delete('/{loan}', [LoanController::class, 'destroy'])
+        ->name('destroy');
+    });
+  });
+
+  // Group Management Routes (Unrestricted)
+  Route::prefix('groups')->name('groups.')->group(function () {
+    Route::get('/', [GroupController::class, 'index'])
+      ->name('index');
+    Route::get('/create', [GroupController::class, 'create'])
+      ->name('create');
+    Route::post('/', [GroupController::class, 'store'])
+      ->name('store');
+    Route::post('/{group}/select', [GroupController::class, 'selectActiveGroup'])
+      ->name('select');
+  });
 });

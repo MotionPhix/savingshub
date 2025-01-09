@@ -23,7 +23,7 @@ class GroupController extends Controller implements HasMiddleware
   public static function middleware(): array
   {
     return [
-      new Middleware('cab:create groups', only: ['create', 'store']),
+      new Middleware('can:create groups', only: ['create', 'store']),
       new Middleware('can:edit groups', except: ['edit', 'update']),
       new Middleware('can:delete groups', except: ['destroy']),
       new Middleware('can:view groups', except: ['index', 'show']),
@@ -73,7 +73,11 @@ class GroupController extends Controller implements HasMiddleware
       return redirect()->back();
     }
 
-    return inertia('Groups/GroupForm');
+    return Inertia('Groups/GroupForm', [
+      'group_types' => $this->getGroupTypes(),
+      'contribution_frequencies' => $this->getContributionFrequencies(),
+      'loan_interest_types' => $this->getLoanInterestTypes()
+    ]);
   }
 
   public function store(Request $request)
@@ -272,5 +276,35 @@ class GroupController extends Controller implements HasMiddleware
   {
     $group->delete();
     return redirect()->route('groups.index')->with('success', 'Group deleted successfully.');
+  }
+
+  // Helper methods for dropdown options
+  protected function getGroupTypes(): array
+  {
+    return [
+      'savings' => 'Savings Group',
+      'investment' => 'Investment Club',
+      'loan' => 'Loan Group',
+      'social' => 'Social Welfare Group'
+    ];
+  }
+
+  protected function getContributionFrequencies(): array
+  {
+    return [
+      'weekly' => 'Weekly',
+      'monthly' => 'Monthly',
+      'quarterly' => 'Quarterly',
+      'annually' => 'Annually'
+    ];
+  }
+
+  protected function getLoanInterestTypes(): array
+  {
+    return [
+      'fixed' => 'Fixed Rate',
+      'variable' => 'Variable Rate',
+      'tiered' => 'Tiered Rate'
+    ];
   }
 }

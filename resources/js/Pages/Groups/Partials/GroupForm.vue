@@ -1,7 +1,31 @@
 <script setup>
 import { ref } from 'vue'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from 'shadcn-vue'
-import { Form, FormField, FormLabel, FormControl, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, MultiSelect, Button } from '@/components/ui'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '@/Components/ui/dialog'
+import {
+  Input,
+} from '@/components/ui/input'
+import {
+  Form,
+  FormField,
+  FormLabel,
+  FormControl,
+} from '@/components/ui/form'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
+import {
+  Button
+} from '@/components/ui/button'
 
 const isOpen = ref(false)
 const groupForm = ref({

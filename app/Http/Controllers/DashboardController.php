@@ -33,7 +33,29 @@ class DashboardController extends Controller
   {
     $user = Auth::user(); // 'permission:view dashboard'
 
-    // Fetch user's groups
+    // Check if user is a super admin
+    if ($user->hasRole('super_admin')) {
+      return $this->superAdminDashboard();
+    }
+
+    // Get groups user is a member of
+    $groups = $user->groups()->with([
+      'members' => function ($query) {
+        $query->where('user_id', Auth::id());
+      }
+    ])->get();
+
+    // Basic user analytics
+    $userAnalytics = $this->getUserAnalytics($user, $groups);
+
+    return Inertia::render('Dashboard/UserDashboard', [
+      'user' => $user,
+      'groups' => $groups,
+      'analytics' => $userAnalytics,
+      'canCreateGroup' => $user->can('create', Group::class)
+    ]);
+
+    /*// Fetch user's groups
     $groups = $user->hasRole('super-admin')
       ? Group::with('members')->get()
       : $user->groups()->with('members')->get();
@@ -50,13 +72,13 @@ class DashboardController extends Controller
     // Savings progress data
     $savingsProgressData = $this->getSavingsProgressData($user);
 
-    return Inertia::render('Dashboard', [
+    return Inertia::render('Dashboard/Index', [
       'groups' => $groups,
       'stats' => $stats,
       'recentActivities' => $recentActivities,
       'upcomingContributions' => $upcomingContributions,
       'savingsProgressData' => $savingsProgressData
-    ]);
+    ]);*/
   }
 
   /**
@@ -226,5 +248,122 @@ class DashboardController extends Controller
       ->min();
 
     return $nextContribution;
+  }
+
+  protected function superAdminDashboard()
+  {
+    return Inertia::render('Dashboard/SuperAdminDashboard', [
+      'totalUsers' => $this->getTotalUsers(),
+      'totalGroups' => $this->getTotalGroups(),
+      'totalContributions' => $this->getTotalContributions(),
+      'totalLoans' => $this->getTotalLoans(),
+      'recentActivity' => $this->getRecentSystemActivity()
+    ]);
+  }
+
+  protected function getUserAnalytics($user, $groups)
+  {
+    return [
+      'total_groups' => $groups->count(),
+      'owned_groups' => $groups->filter(function ($group) use ($user) {
+        return $group->members->first()->role === 'admin';
+      })->count(),
+      'total_contributions' => Contribution::whereIn('group_id', $groups->pluck('id'))
+        ->where('user_id', $user->id)
+        ->sum('amount'),
+      'total_loans' => Loan::whereIn('group_id', $groups->pluck('id'))
+        ->where('user_id', $user->id)
+        ->sum('total_amount'),
+      'recent_activities' => $this->getUserRecentActivities($user, $groups)
+    ];
+  }
+
+  public function selectActiveGroup(Group $group)
+  {
+    // Verify user is a member of the group
+    $membership = $group->members()
+      ->where('user_id', Auth::id())
+      ->first();
+
+    if (!$membership) {
+      return redirect()->back()->with('error', 'You are not a member of this group');
+    }
+
+    // Store selected group in session
+    session(['active_group_id' => $group->id]);
+
+    // Redirect to group dashboard
+    return redirect()->route('groups.dashboard', $group);
+  }
+
+  protected function getTotalUsers()
+  {
+    return User::count();
+  }
+
+  protected function getTotalGroups()
+  {
+    return Group::count();
+  }
+
+  protected function getTotalContributions()
+  {
+    return Contribution::sum('amount');
+  }
+
+  protected function getTotalLoans()
+  {
+    return Loan::sum('total_amount');
+  }
+
+  protected function getRecentSystemActivity()
+  {
+    // Combine recent groups, contributions, and loans
+    $recentGroups = Group::latest()->take(5)->get();
+    $recentContributions = Contribution::with('group', 'user')->latest()->take(5)->get();
+    $recentLoans = Loan::with('group', 'user')->latest()->take(5)->get();
+
+    return [
+      'groups' => $recentGroups,
+      'contributions' => $recentContributions,
+      'loans' => $recentLoans
+    ];
+  }
+
+  protected function getUserRecentActivities($user, $groups)
+  {
+    // Combine and sort recent contributions and loans
+    $contributions = Contribution::whereIn('group_id', $groups->pluck('id'))
+      ->where('user_id', $user->id)
+      ->latest()
+      ->take(5)
+      ->get()
+      ->map(function ($contribution) {
+        return [
+          'type' => 'contribution',
+          'amount' => $contribution->amount,
+          'group_name' => $contribution->group->name,
+          'date' => $contribution->created_at
+        ];
+      });
+
+    $loans = Loan::whereIn('group_id', $groups->pluck('id'))
+      ->where('user_id', $user->id)
+      ->latest()
+      ->take(5)
+      ->get()
+      ->map(function ($loan) {
+        return [
+          'type' => 'loan',
+          'amount' => $loan->total_amount,
+          'group_name' => $loan->group->name,
+          'date' => $loan->created_at
+        ];
+      });
+
+    return $contributions->merge($loans)
+      ->sortByDesc('date')
+      ->values()
+      ->all();
   }
 }

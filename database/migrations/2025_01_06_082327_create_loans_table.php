@@ -52,8 +52,7 @@ return new class extends Migration {
 
       // Approval and Processing
       $table->foreignId('approved_by')
-        ->constrained('users')
-        ->nullOnDelete();
+        ->constrained('users');
 
       $table->timestamp('approved_at')->nullable();
       $table->text('approval_notes')->nullable();

@@ -33,6 +33,7 @@ class RolesAndPermissionsSeeder extends Seeder
     Permission::create(['name' => 'view groups']);
 
     // Contribution Permissions
+    Permission::create(['name' => 'freeze contributions']);
     Permission::create(['name' => 'make contributions']);
     Permission::create(['name' => 'view contributions']);
     Permission::create(['name' => 'edit contributions']);
@@ -52,12 +53,18 @@ class RolesAndPermissionsSeeder extends Seeder
 
     // Roles
     $superAdmin = Role::create(['name' => 'super-admin']);
-    $participant = Role::firstOrCreate(['name' => 'participant']);
+    $appParticipant = Role::firstOrCreate(['name' => 'participant']);
     $groupAdmin = Role::create(['name' => 'group-admin']);
     $groupMember = Role::create(['name' => 'group-member']);
 
     // Assign permissions to roles
     $superAdmin->givePermissionTo(Permission::all());
+
+    $appParticipant->givePermissionTo([
+      'view dashboard', 'create groups', 'edit groups', 'delete groups', 'freeze contributions',
+      'view groups', 'make contributions', 'view contributions', 'edit contributions', 'edit members',
+      'request loans', 'approve loans', 'view loans', 'add members', 'remove members', 'ban members'
+    ]);
 
     $groupAdmin->givePermissionTo([
       'view dashboard', 'create groups', 'edit groups', 'delete groups', 'freeze contributions',

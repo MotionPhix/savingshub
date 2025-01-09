@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->web(append: [
       \App\Http\Middleware\HandleInertiaRequests::class,
       \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+      \App\Http\Middleware\SetActiveGroup::class,
+    ]);
+
+    $middleware->alias([
+      'select.group' => \App\Http\Middleware\SetActiveGroup::class
     ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {

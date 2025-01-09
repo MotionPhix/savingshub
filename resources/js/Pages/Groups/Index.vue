@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from "@/Components/ui/dropdown-menu";
+import DataTable from "@/Components/DataTable.vue";
 
 const groups = ref([])
 const createModalOpen = ref(false)
