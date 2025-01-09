@@ -59,6 +59,12 @@ class Group extends Model
     'notification_preferences'
   ];
 
+  protected $appends = [
+    'pending_contributions_count',
+    'pending_loan_requests_count',
+    'pending_invitations_count'
+  ];
+
   // Boot method for automatic slug generation
   protected static function boot()
   {
@@ -244,5 +250,21 @@ class Group extends Model
 
     // Additional checks can be added here
     return true;
+  }
+
+  // Computed attributes
+  public function getPendingContributionsCountAttribute()
+  {
+    return $this->contributions()->pending()->count();
+  }
+
+  public function getPendingLoanRequestsCountAttribute()
+  {
+    return $this->loans()->pending()->count();
+  }
+
+  public function getPendingInvitationsCountAttribute()
+  {
+    return $this->members()->wherePivot('status', 'invited')->count();
   }
 }

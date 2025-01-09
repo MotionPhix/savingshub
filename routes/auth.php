@@ -89,7 +89,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::get(
     '/profile',
     [ProfileController::class, 'edit']
-  )->name('profile.edit');
+  )->name('profile.index');
 
   Route::patch(
     '/profile',
@@ -146,5 +146,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
       ->name('store');
     Route::post('/{group}/select', [GroupController::class, 'selectActiveGroup'])
       ->name('select');
+
+    // Group Settings
+    Route::get('/settings', [GroupSettingsController::class, 'edit'])
+      ->name('settings');
+    Route::put('/settings', [GroupSettingsController::class, 'update'])
+      ->name('settings.update');
+  });
+
+  // Members Routes
+  Route::prefix('members')->name('members.')->group(function () {
+    Route::get('/', [GroupMemberController::class, 'index'])
+      ->name('index');
+    Route::post('/invite', [GroupMemberController::class, 'invite'])
+      ->name('invite');
+    Route::post('/{user}/change-role', [GroupMemberController::class, 'changeRole'])
+      ->name('change-role');
+    Route::delete('/{user}', [GroupMemberController::class, 'remove'])
+      ->name('remove');
   });
 });

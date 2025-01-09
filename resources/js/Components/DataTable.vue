@@ -1,12 +1,22 @@
 <script setup>
-import { ref, computed, defineProps, defineEmits } from 'vue'
+import { ref, computed, defineEmits } from 'vue'
 import {
-  Table, TableHeader, TableBody, TableRow,
-  TableHead, TableCell,
-  Input, Select, SelectTrigger,
-  SelectValue, SelectContent,
-  SelectItem, Button
-} from 'shadcn-vue'
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/Components/ui/table'
+import { Input } from '@/Components/ui/input'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/Components/ui/select'
+import { Button } from '@/Components/ui/button'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'

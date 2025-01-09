@@ -54,7 +54,7 @@ const closeModal = () => {
 </script>
 
 <template>
-  <Dialog v-model:open="isOpen">
+  <GlobalModal>
     <DialogContent class="sm:max-w-[600px]">
       <DialogHeader>
         <DialogTitle>Create New Savings Group</DialogTitle>
@@ -125,5 +125,5 @@ const closeModal = () => {
         </div>
       </Form>
     </DialogContent>
-  </Dialog>
+  </GlobalModal>
 </template>

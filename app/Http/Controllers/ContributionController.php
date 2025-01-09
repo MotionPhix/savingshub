@@ -10,13 +10,16 @@ class ContributionController extends Controller
 {
   public function index()
   {
-    $contributions = Contribution::where('group_member_id', Auth::user()->groupMember->id)->get();
-    return view('contributions.index', compact('contributions'));
+    $contributions = Contribution::where('group_member_id', Auth::user()->id)->get();
+
+    return Inertia(
+      'Contributions/Index', compact('contributions')
+    );
   }
 
   public function create()
   {
-    return view('contributions.create');
+    return Inertia('Contributions/Create');
   }
 
   public function store(Request $request)

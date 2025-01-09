@@ -13,14 +13,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
-class GroupController extends Controller implements HasMiddleware
+class GroupController extends Controller // implements HasMiddleware
 {
   public function __construct(protected GroupService $groupService) {}
 
   /**
    * Get the middleware that should be assigned to the controller.
    */
-  public static function middleware(): array
+  /*public static function middleware(): array
   {
     return [
       new Middleware('can:create groups', only: ['create', 'store']),
@@ -28,7 +28,7 @@ class GroupController extends Controller implements HasMiddleware
       new Middleware('can:delete groups', except: ['destroy']),
       new Middleware('can:view groups', except: ['index', 'show']),
     ];
-  }
+  }*/
 
   public function index()
   {
@@ -61,7 +61,7 @@ class GroupController extends Controller implements HasMiddleware
       })->get();
 
     return Inertia('Groups/Index', [
-      'groups' => $groups
+      'groups' => $groups,
     ]);
   }
 
@@ -73,10 +73,12 @@ class GroupController extends Controller implements HasMiddleware
       return redirect()->back();
     }
 
-    return Inertia('Groups/GroupForm', [
+    return Inertia('Groups/NewGroup', [
       'group_types' => $this->getGroupTypes(),
       'contribution_frequencies' => $this->getContributionFrequencies(),
-      'loan_interest_types' => $this->getLoanInterestTypes()
+      'loan_interest_types' => $this->getLoanInterestTypes(),
+      'canCreateGroup' => $user->canCreateGroup(),
+      'groups' => $user->groups,
     ]);
   }
 

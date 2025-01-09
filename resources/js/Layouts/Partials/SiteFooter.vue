@@ -12,7 +12,7 @@ const footerLinks = [
 
 <template>
   <footer class="border-t pt-5">
-    <div class="flex flex-col items-center justify-between lg:flex-row">
+    <div class="flex flex-col items-center justify-between lg:flex-row lg:px-6">
 
       <div class="flex flex-col items-center md:flex-row lg:gap-8 gap-4">
         <Link href="/" class="flex items-center space-x-2">
@@ -34,8 +34,9 @@ const footerLinks = [
       </div>
 
       <p class="text-center text-xs text-muted-foreground">
-        © {{ new Date().getFullYear() }} Savings Tracker. All rights reserved.
+        © {{ new Date().getFullYear() }} SavingsHub. All rights reserved.
       </p>
+
     </div>
   </footer>
 </template>

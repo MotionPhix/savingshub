@@ -94,7 +94,7 @@ const {user, userGroups} = usePage().props.auth
         </li>
 
         <SidebarItem
-          :href="route('profile.edit')"
+          :href="route('profile.index')"
           label="Profile"
           :icon="SettingsIcon"
         />

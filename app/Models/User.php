@@ -52,9 +52,19 @@ class User extends Authenticatable /*implements MustVerifyEmail*/
   }
 
   // Relationships
-  public function groups(): HasMany
+  /*public function groups(): HasMany
   {
     return $this->hasMany(Group::class, 'created_by');
+  }*/
+
+  /**
+   * Relationship for user groups
+   */
+  public function groups()
+  {
+    return $this->belongsToMany(Group::class, 'group_members')
+      ->withPivot('role', 'status')
+      ->wherePivot('status', 'active');
   }
 
   public function groupMemberships(): HasMany
@@ -152,6 +162,16 @@ class User extends Authenticatable /*implements MustVerifyEmail*/
     $this->update([
       'account_status' => 'suspended'
     ]);
+  }
+
+  /**
+   * Get pending group invitations
+   */
+  public function pendingGroupInvitations()
+  {
+    return $this->belongsToMany(Group::class, 'group_members')
+      ->withPivot('role', 'status')
+      ->wherePivot('status', 'invited');
   }
 
   public function reactivateAccount()

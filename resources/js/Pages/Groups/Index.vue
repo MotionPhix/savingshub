@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import {ref, computed, onMounted} from 'vue'
 import {
   Card,
   CardContent,
@@ -12,24 +12,18 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from "@/Components/ui/dropdown-menu";
+import {Button} from '@/Components/ui/button'
 import DataTable from "@/Components/DataTable.vue";
+import AppLayout from "@/Layouts/AppLayout.vue";
 
 const groups = ref([])
 const createModalOpen = ref(false)
 
-const canCreateGroup = computed(() => {
-  // Check user permissions
-  return usePermission('create groups') })
-const canEditGroup = computed(() => {
-  // Check user permissions
-  return usePermission('edit groups')
-})
-
 const groupColumns = [
-  { name: 'Group Name', key: 'name' },
-  { name: 'Created By', key: 'creator.name' },
-  { name: 'Status', key: 'status' },
-  { name: 'Actions', key: 'actions' }
+  {name: 'Group Name', key: 'name'},
+  {name: 'Created By', key: 'creator.name'},
+  {name: 'Status', key: 'status'},
+  {name: 'Actions', key: 'actions'}
 ]
 
 const fetchGroups = async () => {
@@ -48,12 +42,12 @@ const closeCreateModal = () => {
 
 const viewGroupDetails = (group) => {
   // Navigate to group details page
-  router.push({ name: 'group.show', params: { id: group.id } })
+  router.push({name: 'group.show', params: {id: group.id}})
 }
 
 const editGroup = (group) => {
   // Navigate to edit group page
-  router.push({ name: 'group.edit', params: { id: group.id } })
+  router.push({name: 'group.edit', params: {id: group.id}})
 }
 
 onMounted(() => {
@@ -62,58 +56,55 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="group-management">
-    <Card>
-      <CardHeader>
-        <CardTitle>Group Management</CardTitle>
-        <Button
-          v-if="canCreateGroup"
-          @click="openCreateGroupModal">
-          Create New Group
-        </Button>
-      </CardHeader>
+  <AppLayout>
+    <div class="group-management">
+      <Card>
+        <CardHeader>
+          <CardTitle>Group Management</CardTitle>
+        </CardHeader>
 
-      <CardContent>
+        <CardContent>
 
-        <DataTable
-          :columns="groupColumns"
-          :data="groups">
-          <template #actions="{ row }">
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                Actions
-              </DropdownMenuTrigger>
+          <DataTable
+            :columns="groupColumns"
+            :data="groups">
+            <template #actions="{ row }">
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  Actions
+                </DropdownMenuTrigger>
 
-              <DropdownMenuContent>
+                <DropdownMenuContent>
 
-                <DropdownMenuItem @click="viewGroupDetails(row)">
-                  View Details
-                </DropdownMenuItem>
+                  <DropdownMenuItem @click="viewGroupDetails(row)">
+                    View Details
+                  </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  v-if="canEditGroup"
-                  @click="editGroup(row)">
-                  Edit Group
-                </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="canEditGroup"
+                    @click="editGroup(row)">
+                    Edit Group
+                  </DropdownMenuItem>
 
-              </DropdownMenuContent>
+                </DropdownMenuContent>
 
-            </DropdownMenu>
+              </DropdownMenu>
 
-          </template>
+            </template>
 
-        </DataTable>
+          </DataTable>
 
-      </CardContent>
+        </CardContent>
 
-    </Card>
+      </Card>
 
-    <!-- Modals for Create/Edit Group -->
-<!--    <GroupCreateModal-->
-<!--      :open="createModalOpen"-->
-<!--      @close="closeCreateModal"-->
-<!--    />-->
-  </div>
+      <!-- Modals for Create/Edit Group -->
+      <!--    <GroupCreateModal-->
+      <!--      :open="createModalOpen"-->
+      <!--      @close="closeCreateModal"-->
+      <!--    />-->
+    </div>
+  </AppLayout>
 </template>
 
 <style scoped>
