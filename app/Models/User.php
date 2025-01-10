@@ -26,6 +26,7 @@ class User extends Authenticatable /*implements MustVerifyEmail*/
     'name',
     'email',
     'password',
+    'gender',
     'user_type',
     'account_status',
     'max_groups',
@@ -86,12 +87,6 @@ class User extends Authenticatable /*implements MustVerifyEmail*/
   public function scopeActive($query)
   {
     return $query->where('account_status', 'active');
-  }
-
-  // Computed Attributes
-  public function getFormattedNameAttribute()
-  {
-    return ucwords($this->name);
   }
 
   // Checks and Permissions

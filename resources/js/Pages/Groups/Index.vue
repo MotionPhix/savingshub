@@ -1,5 +1,5 @@
-<script setup>
-import {ref, computed, onMounted} from 'vue'
+<script setup lang="ts">
+import {ref} from 'vue'
 import {
   Card,
   CardContent,
@@ -15,6 +15,14 @@ import {
 import {Button} from '@/Components/ui/button'
 import DataTable from "@/Components/DataTable.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import {router} from "@inertiajs/vue3";
+import EmptyGroups from "@/Pages/Groups/Partials/EmptyGroups.vue";
+
+const props = withDefaults(defineProps<{
+  groups: Array<{}>
+}>(), {
+  groups: () => []
+})
 
 const groups = ref([])
 const createModalOpen = ref(false)
@@ -26,33 +34,15 @@ const groupColumns = [
   {name: 'Actions', key: 'actions'}
 ]
 
-const fetchGroups = async () => {
-  const response = await axios.get('/api/groups')
-  groups.value = response.data.groups
-}
-
-const openCreateGroupModal = () => {
-  createModalOpen.value = true
-}
-
-const closeCreateModal = () => {
-  createModalOpen.value = false
-  fetchGroups() // Refresh the group list after closing the modal
-}
-
 const viewGroupDetails = (group) => {
   // Navigate to group details page
-  router.push({name: 'group.show', params: {id: group.id}})
+  //router.push({name: 'group.show', params: {id: group.id}})
 }
 
 const editGroup = (group) => {
   // Navigate to edit group page
-  router.push({name: 'group.edit', params: {id: group.id}})
+  //router.push({name: 'group.edit', params: {id: group.id}})
 }
-
-onMounted(() => {
-  fetchGroups()
-})
 </script>
 
 <template>
@@ -65,7 +55,12 @@ onMounted(() => {
 
         <CardContent>
 
+          <EmptyGroups
+            v-if="groups.length === 0"
+            @create="createModalOpen = true" />
+
           <DataTable
+            v-else
             :columns="groupColumns"
             :data="groups">
             <template #actions="{ row }">
@@ -98,11 +93,10 @@ onMounted(() => {
 
       </Card>
 
-      <!-- Modals for Create/Edit Group -->
-      <!--    <GroupCreateModal-->
-      <!--      :open="createModalOpen"-->
-      <!--      @close="closeCreateModal"-->
-      <!--    />-->
+<!--      <GroupCreateModal-->
+<!--        :open="createModalOpen"-->
+<!--        @close="closeCreateModal"-->
+<!--      />-->
     </div>
   </AppLayout>
 </template>

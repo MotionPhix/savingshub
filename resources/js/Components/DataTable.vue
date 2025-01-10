@@ -1,5 +1,5 @@
-<script setup>
-import { ref, computed, defineEmits } from 'vue'
+<script setup lang="ts">
+import {ref, computed} from 'vue'
 import {
   Table,
   TableHeader,
@@ -8,7 +8,7 @@ import {
   TableHead,
   TableCell,
 } from '@/Components/ui/table'
-import { Input } from '@/Components/ui/input'
+import {Input} from '@/Components/ui/input'
 import {
   Select,
   SelectTrigger,
@@ -16,25 +16,22 @@ import {
   SelectContent,
   SelectItem,
 } from '@/Components/ui/select'
-import { Button } from '@/Components/ui/button'
+import {Button} from '@/Components/ui/button'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from "@/Components/ui/dropdown-menu";
 
-const props = defineProps({
-  columns: {
-    type: Array,
-    required: true
-  },
-  data: {
-    type: Array,
-    required: true
-  },
-  hasActions: {
-    type: Boolean,
-    default: false
-  }
-})
+const props = withDefaults(
+  defineProps<{
+    columns: Array<{}>
+    data: Array<{}>
+    hasActions?: boolean
+  }>(), {
+    hasActions: false
+  })
 
 const emit = defineEmits(['export-pdf', 'export-excel', 'export-csv'])
 
@@ -110,7 +107,7 @@ const exportToCSV = () => {
   const worksheet = XLSX.utils.json_to_sheet(filteredAndPaginatedData.value)
   const csvContent = XLSX.utils.sheet_to_csv(worksheet)
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'})
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)
 
@@ -120,7 +117,7 @@ const exportToCSV = () => {
 
   document.body.appendChild(link)
   link.click()
-  document.body .removeChild(link)
+  document.body.removeChild(link)
   emit('export-csv', filteredAndPaginatedData.value)
 }
 </script>
@@ -136,7 +133,7 @@ const exportToCSV = () => {
         />
         <Select v-model="perPage">
           <SelectTrigger class="w-[180px]">
-            <SelectValue placeholder="Rows per page" />
+            <SelectValue placeholder="Rows per page"/>
           </SelectTrigger>
 
           <SelectContent>
@@ -148,9 +145,16 @@ const exportToCSV = () => {
       </div>
 
       <div class="export-actions flex space-x-2">
-        <Button @click="exportToPDF">Export PDF</Button>
-        <Button @click="exportToExcel">Export Excel</Button>
-        <Button @click="exportToCSV">Export CSV</Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button>Export</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem @click="exportToPDF">Export PDF</DropdownMenuItem>
+            <DropdownMenuItem @click="exportToExcel">Export Excel</DropdownMenuItem>
+            <DropdownMenuItem @click="exportToCSV">Export CSV</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
 
@@ -202,6 +206,7 @@ const exportToCSV = () => {
 .data-table {
   margin: 20px 0;
 }
+
 .table-controls {
   margin-bottom: 1rem;
 }

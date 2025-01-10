@@ -1,5 +1,5 @@
 <script setup>
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import { Toaster } from 'vue-sonner'
 import SiteHeader from "@/Layouts/Partials/SiteHeader.vue";
 import Sidebar from "@/Layouts/Partials/Sidebar.vue";
 import SiteFooter from "@/Layouts/Partials/SiteFooter.vue";
@@ -32,7 +32,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Toaster />
+  <Toaster :expand="true" />
 
   <div class="h-screen bg-gray-50 dark:bg-gray-900 w-screen overflow-hidden">
     <SiteHeader>

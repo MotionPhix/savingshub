@@ -1,8 +1,10 @@
 <script setup>
-import {reactive} from 'vue'
-import {useForm} from '@inertiajs/vue3'
+import {router, useForm} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import FormField from '@/Components/Forms/FormField.vue'
+import {Button} from "@/Components/ui/button/index.js";
+import {computed, ref} from "vue";
+import {toast} from "vue-sonner";
 
 const form = useForm({
   name: '',
@@ -21,13 +23,16 @@ const form = useForm({
   base_interest_rate: 5.00,
   interest_tiers: [],
   max_loan_amount: null,
-  loan_duration_months: 6,
+  loan_duration_months: 1,
   require_group_approval: true,
   settings: {},
   notification_preferences: {}
 })
 
 const submitForm = () => {
+  console.log(form.data())
+  return
+  
   // Calculate end date based on start date and duration
   form.end_date = new Date(
     form.start_date.getFullYear(),
@@ -90,110 +95,118 @@ const submitForm = () => {
         <form @submit.prevent="submitForm">
           <!-- Basic Group Information -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="Group Name" required>
-              <input
-                v-model="form.name"
-                type="text"
-                class="input"
-                placeholder="Enter group name"
-                required
-              />
-            </FormField>
+            <FormField
+              label="Group Name"
+              v-model="form.name"
+              type="text"
+              placeholder="Enter group name"
+              required
+            />
 
-            <FormField label="Mission Statement">
-              <input
-                v-model="form.mission_statement"
-                type="text"
-                class="input"
-                placeholder="Optional group mission"
-              />
-            </FormField>
+            <FormField
+              label="Mission Statement"
+              v-model="form.mission_statement"
+              placeholder="Optional group mission"
+            />
           </div>
 
-          <FormField label="Description" class="mt-4">
-            <textarea
-              v-model="form.description"
-              class="input h-24"
-              placeholder="Describe your group's purpose"
-            ></textarea>
-          </FormField>
+          <FormField
+            type="textarea"
+            label="Description" class="mt-4"
+            v-model="form.description"
+            placeholder="Describe your group's purpose"
+          />
 
           <!-- Contribution Settings -->
           <div class="mt-6">
-            <h2 class="text-lg font-semibold mb-4">Contribution Settings</h2>
+            <h2 class="text-lg font-semibold mb-4">
+              Contribution Settings
+            </h2>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField label="Contribution Frequency">
-                <select v-model="form.contribution_frequency" class="input">
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                </select>
-              </FormField>
+              <FormField
+                type="select"
+                label="Contribution Frequency"
+                v-model="form.contribution_frequency"
+                :options="[
+                  {
+                    label: 'Weekly',
+                    value: 'weekly'
+                  },
+                  {
+                    label: 'Monthly',
+                    value: 'monthly'
+                  },
+                  {
+                    label: 'Quarterly',
+                    value: 'quarterly'
+                  }
+                ]"
+              />
 
-              <FormField label="Contribution Amount">
-                <input
-                  v-model.number="form.contribution_amount"
-                  type="number"
-                  class="input"
-                  placeholder="Amount"
-                  min="0"
-                />
-              </FormField>
+              <FormField
+                label="Contribution Amount"
+                v-model.number="form.contribution_amount"
+                type="number"
+                class="input"
+                placeholder="Amount"
+                min="0"
+              />
 
-              <FormField label="Group Duration (Months)">
-                <input
-                  v-model.number="form.duration_months"
-                  type="number"
-                  class="input"
-                  placeholder="Duration"
-                  min="1"
-                />
-              </FormField>
+              <FormField
+                label="Group Duration (Months)"
+                v-model.number="form.duration_months"
+                type="number"
+                class="input"
+                placeholder="Duration"
+                min="1"
+              />
             </div>
           </div>
 
           <!-- Loan Settings -->
           <div class="mt-6">
             <h2 class="text-lg font-semibold mb-4">Loan Settings</h2>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Loan Interest Type">
-                <select v-model="form.loan_interest_type" class="input">
-                  <option value="fixed">Fixed Rate</option>
-                  <option value="variable">Variable Rate</option>
-                  <option value="tiered">Tiered Rate</option>
-                </select>
-              </FormField>
+              <FormField
+                type="select"
+                label="Loan Interest Type"
+                v-model="form.loan_interest_type"
+                :options="[
+                  { value: 'fixed', label: 'Fixed Rate' },
+                  { value: 'variable', label: 'Variable Rate' },
+                  { value: 'tiered', label: 'Tiered Rate' }
+                ]"
+              />
 
-              <FormField label="Base Interest Rate (%)">
-                <input
-                  v-model.number="form.base_interest_rate"
-                  type="number"
-                  class="input"
-                  placeholder="Interest Rate"
-                  step="0.01"
-                  min="0"
-                />
-              </FormField>
+              <FormField
+                label="Base Interest Rate (%)"
+                v-model.number="form.base_interest_rate"
+                type="number"
+                class="input"
+                placeholder="Interest Rate"
+                step="0.01"
+                min="0"
+              />
 
-              <FormField label="Max Loan Amount">
-                <input
-                  v-model.number="form.max_loan_amount"
-                  type="number"
-                  class="input"
-                  placeholder="Maximum Loan Amount"
-                  min="0"
-                />
-              </FormField>
+              <FormField
+                label="Max Loan Amount"
+                v-model.number="form.max_loan_amount"
+                type="number"
+                class="input"
+                placeholder="Maximum Loan Amount"
+                min="0"
+              />
 
-              <FormField label="Loan Duration (Months)">
-                <input
-                  v-model.number="form.loan_duration_months"
-                  type="number"
-                  class="input"
-                  placeholder="Loan Duration"
-                  min="1"
-                />
-              </FormField>
+              <FormField
+                label="Loan Duration (Months)"
+                v-model.number="form.loan_duration_months"
+                type="number"
+                class="input"
+                placeholder="Loan Duration"
+                min="1"
+              />
             </div>
           </div>
 
@@ -201,66 +214,47 @@ const submitForm = () => {
           <div class="mt-6">
             <h2 class="text-lg font-semibold mb-4">Group Preferences</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Group Visibility">
-                <div class="flex items-center space-x-4">
-                  <label class="flex items-center space-x-2">
-                    <input
-                      v-model="form.is_public"
-                      type="radio"
-                      :value="true"
-                      class="form-radio"
-                    />
-                    <span>Public</span>
-                  </label>
-                  <label class="flex items-center space-x-2">
-                    <input
-                      v-model="form.is_public"
-                      type="radio"
-                      :value="false"
-                      class="form-radio"
-                    />
-                    <span>Private</span>
-                  </label>
-                </div>
-              </FormField>
 
-              <FormField label="Member Invitations">
-                <div class="flex items-center space-x-4">
-                  <label class="flex items-center space-x-2">
-                    <input
-                      v-model="form.allow_member_invites"
-                      type="checkbox"
-                      class="form-checkbox"
-                    />
-                    <span>Allow Members to Invite</span>
-                  </label>
-                </div>
-              </FormField>
+              <FormField
+                type="radio"
+                orientation="horizontal"
+                label="Group Visibility"
+                :options="[
+                  {
+                    value: true,
+                    label: 'Public'
+                  },
+                  {
+                    value: false,
+                    label: 'Private'
+                  }
+                ]"
+                v-model="form.is_public"
+              />
 
-              <FormField label="Loan Approval">
-                <div class="flex items-center space-x-4">
-                  <label class="flex items-center space-x-2">
-                    <input
-                      v-model="form.require_group_approval"
-                      type="checkbox"
-                      class="form-checkbox"
-                    />
-                    <span>Require Group Approval for Loans</span>
-                  </label>
-                </div>
-              </FormField>
+              <FormField
+                type="checkbox"
+                label="Member Invitations"
+                v-model="form.allow_member_invites"
+                placeholder="Allow Members to Invite"
+              />
+
+              <FormField
+                type="checkbox"
+                label="Loan Approval"
+                placeholder="Require Group Approval for Loans"
+                v-model="form.require_group_approval"
+              />
             </div>
           </div>
 
           <!-- Submit Button -->
-          <div class="mt-8 flex justify-center">
-            <button
+          <div class="mt-8 flex justify-end">
+            <Button
               type="submit"
-              class="btn btn-primary px-8 py-3"
-              :disabled="form.processing"
-            >
+              :disabled="form.processing">
               {{ form.processing ? 'Creating...' : 'Create Group' }}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
