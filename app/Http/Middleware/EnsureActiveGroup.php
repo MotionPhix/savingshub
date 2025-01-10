@@ -48,7 +48,9 @@ class EnsureActiveGroup
   protected $excludedRoutes = [
     'dashboard',
     'groups.index',
-    'groups.create',
+    'groups.store',
+    'groups.set.active',
+    'groups.store',
     'profile.edit',
     'profile.update'
   ];
@@ -115,9 +117,9 @@ class EnsureActiveGroup
       ], 409);
     }
 
-    return Inertia::render('Groups/SelectGroup', [
+    return Inertia::modal('Groups/SelectGroup', [
       'groups' => $userGroups,
       'message' => 'Please select a group to continue.'
-    ]);
+    ])->baseUrl('/groups');
   }
 }

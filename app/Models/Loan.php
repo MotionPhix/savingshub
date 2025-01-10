@@ -184,4 +184,11 @@ class Loan extends Model
 
     return ($this->total_amount - $this->total_paid_amount) * $penaltyRate;
   }
+
+  public function scopePendingInGroup($query, $groupId)
+  {
+    return $query->join('group_members', 'loans.group_member_id', '=', 'group_members.id')
+      ->where('group_members.group_id', $groupId)
+      ->where('loans.status', 'pending');
+  }
 }

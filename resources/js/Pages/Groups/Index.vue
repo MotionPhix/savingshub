@@ -12,11 +12,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from "@/Components/ui/dropdown-menu";
-import {Button} from '@/Components/ui/button'
+import {DotIcon} from 'lucide-vue-next'
 import DataTable from "@/Components/DataTable.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
-import {router} from "@inertiajs/vue3";
 import EmptyGroups from "@/Pages/Groups/Partials/EmptyGroups.vue";
+import {router} from "@inertiajs/vue3";
 
 const props = withDefaults(defineProps<{
   groups: Array<{}>
@@ -24,24 +24,23 @@ const props = withDefaults(defineProps<{
   groups: () => []
 })
 
-const groups = ref([])
 const createModalOpen = ref(false)
 
 const groupColumns = [
-  {name: 'Group Name', key: 'name'},
-  {name: 'Created By', key: 'creator.name'},
-  {name: 'Status', key: 'status'},
-  {name: 'Actions', key: 'actions'}
+  { label: 'Group Name', key: 'name' },
+  { label: 'Created By', key: 'creator.name' },
+  { label: 'Status', key: 'status' },
 ]
 
 const viewGroupDetails = (group) => {
   // Navigate to group details page
-  //router.push({name: 'group.show', params: {id: group.id}})
+  //router.push({name: 'groups.show', params: {id: group.id}})
 }
 
 const editGroup = (group) => {
+  console.log(group)
   // Navigate to edit group page
-  //router.push({name: 'group.edit', params: {id: group.id}})
+  router.visit(route('groups.edit', group.uuid), { replace: true })
 }
 </script>
 
@@ -61,23 +60,39 @@ const editGroup = (group) => {
 
           <DataTable
             v-else
+            :has-actions="true"
             :columns="groupColumns"
             :data="groups">
             <template #actions="{ row }">
               <DropdownMenu>
                 <DropdownMenuTrigger>
-                  Actions
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+                    <path d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                    <path d="M6.99609 12H17.0041" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    <path d="M17.0039 9H8.99994C8.01346 9 7.14269 9.01038 7.01994 8.676C6.92417 8.41502 7.52394 7.596 8.00394 6.996" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    <path d="M7.00973 15L15.0137 15C16.0002 15 16.871 14.9896 16.9937 15.324C17.0895 15.585 16.4897 16.404 16.0097 17.004" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent>
+                <DropdownMenuContent align="end">
 
                   <DropdownMenuItem @click="viewGroupDetails(row)">
-                    View Details
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+                      <path d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M12.2422 17V12C12.2422 11.5286 12.2422 11.2929 12.0957 11.1464C11.9493 11 11.7136 11 11.2422 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M11.992 8H12.001" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+
+                    Details
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    v-if="canEditGroup"
                     @click="editGroup(row)">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+                      <path d="M15.2141 5.98239L16.6158 4.58063C17.39 3.80646 18.6452 3.80646 19.4194 4.58063C20.1935 5.3548 20.1935 6.60998 19.4194 7.38415L18.0176 8.78591M15.2141 5.98239L6.98023 14.2163C5.93493 15.2616 5.41226 15.7842 5.05637 16.4211C4.70047 17.058 4.3424 18.5619 4 20C5.43809 19.6576 6.94199 19.2995 7.57889 18.9436C8.21579 18.5877 8.73844 18.0651 9.78375 17.0198L18.0176 8.78591M15.2141 5.98239L18.0176 8.78591" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M11 20H17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+
                     Edit Group
                   </DropdownMenuItem>
 

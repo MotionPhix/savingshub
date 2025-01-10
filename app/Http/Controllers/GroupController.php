@@ -6,6 +6,7 @@ use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\User;
 use App\Services\GroupService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -15,7 +16,9 @@ use Illuminate\Support\Facades\Gate;
 
 class GroupController extends Controller // implements HasMiddleware
 {
-  public function __construct(protected GroupService $groupService) {}
+  public function __construct(protected GroupService $groupService)
+  {
+  }
 
   /**
    * Get the middleware that should be assigned to the controller.
@@ -55,8 +58,8 @@ class GroupController extends Controller // implements HasMiddleware
     // For free users, show their own groups
     // For paid users, potentially show more groups
     $groups = $user->isFreeUser()
-      ? $user->groups
-      : Group::whereHas('members', function($query) use ($user) {
+      ? $user->groups->load('creator')
+      : Group::whereHas('members', function ($query) use ($user) {
         $query->where('user_id', $user->id);
       })->get();
 
@@ -69,11 +72,13 @@ class GroupController extends Controller // implements HasMiddleware
   {
     $user = Auth::user();
 
-    if (! $user->canCreateGroup()) {
-      return redirect()->back();
+    if (!$user->canCreateGroup()) {
+      return redirect()->back()->withErrors([
+        'message' => 'You are using the free version. You can only create one group'
+      ]);
     }
 
-    return Inertia('Groups/NewGroup', [
+    return Inertia('Groups/Create', [
       'group_types' => $this->getGroupTypes(),
       'contribution_frequencies' => $this->getContributionFrequencies(),
       'loan_interest_types' => $this->getLoanInterestTypes(),
@@ -87,6 +92,21 @@ class GroupController extends Controller // implements HasMiddleware
     // Validate group creation
     $validatedData = $request->validate([
       'name' => 'required|string|max:255|unique:groups,name',
+      'start_date' => 'required|date|after:' . now()->addWeek()->format('Y-m-d'),
+      'end_date' => [
+        'required', 'date',
+        function ($attribute, $value, $fail) use ($request) {
+          $startDate = Carbon::parse($request->start_date);
+
+          $expectedEndDate = $startDate->addMonths($request
+            ->duration_months)->subDay()
+            ->format('Y-m-d');
+
+          if ($value !== $expectedEndDate) {
+            $fail('The end date must be ' . $expectedEndDate . '.');
+          }
+        },
+      ],
       'description' => 'nullable|string|max:1000',
       'contribution_frequency' => 'required|in:weekly,monthly,quarterly,annually',
       'contribution_amount' => 'required|numeric|min:1',
@@ -100,7 +120,7 @@ class GroupController extends Controller // implements HasMiddleware
     try {
       // Create group using service
       $group = $this->groupService->createGroup(
-        auth()->user(),
+        $request->user(),
         $validatedData
       );
 
@@ -308,5 +328,78 @@ class GroupController extends Controller // implements HasMiddleware
       'variable' => 'Variable Rate',
       'tiered' => 'Tiered Rate'
     ];
+  }
+
+  /**
+   * Select an active group for the current user
+   */
+  public function activate(Request $request, Group $group)
+  {
+    // Verify user is a member of the group
+    $groupMember = GroupMember::where('group_id', $group->id)
+      ->where('user_id', Auth::id())
+      ->where('status', 'active')
+      ->first();
+
+    // If not a member, throw authorization exception
+    if (!$groupMember) {
+      abort(403, 'You are not a member of this group');
+    }
+
+    // Store the active group in the session
+    $request->session()->put('active_group_id', $group->id);
+
+    // Optional: You can also store the user's role in the group
+    $request->session()->put('active_group_role', $groupMember->role);
+
+    // Redirect to the group dashboard or return a response
+    return redirect()->intended('groups.index')
+      ->with('success', "You've switched to the group: {$group->name}");
+  }
+
+  /**
+   * Clear the active group selection
+   */
+  public function clearActiveGroup(Request $request)
+  {
+    $request->session()->forget('active_group_id');
+    $request->session()->forget('active_group_role');
+
+    return redirect()->route('dashboard')
+      ->with('info', 'You are no longer in a specific group context');
+  }
+
+  /**
+   * Middleware to check active group context
+   */
+  public function ensureActiveGroup(Request $request, $next)
+  {
+    $activeGroupId = $request->session()->get('active_group_id');
+
+    if (!$activeGroupId) {
+      // Redirect to group selection if no active group
+      return redirect()->route('groups.index')
+        ->with('warning', 'Please select a group to continue');
+    }
+
+    // Verify the active group still exists and user is a member
+    $group = Group::find($activeGroupId);
+    $groupMember = GroupMember::where('group_id', $activeGroupId)
+      ->where('user_id', Auth::id())
+      ->where('status', 'active')
+      ->first();
+
+    if (!$group || !$groupMember) {
+      $request->session()->forget('active_group_id');
+      $request->session()->forget('active_group_role');
+
+      return redirect()->route('groups.index')
+        ->with('warning', 'Your previous group is no longer available');
+    }
+
+    // Attach the group to the request for easy access
+    $request->merge(['active_group' => $group]);
+
+    return $next($request);
   }
 }

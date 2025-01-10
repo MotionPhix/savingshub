@@ -15,6 +15,8 @@ class GroupService
     return DB::transaction(function () use ($user, $data) {
       $group = Group::create([
         'name' => $data['name'],
+        'start_date' => $data['start_date'],
+        'end_date' => $data['end_date'],
         'description' => $data['description'] ?? null,
         'contribution_frequency' => $data['contribution_frequency'],
         'contribution_amount' => $data['contribution_amount'],

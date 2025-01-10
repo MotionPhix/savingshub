@@ -105,64 +105,132 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::middleware('active.group')->group(function () {
     // Contributions Routes
     Route::prefix('contributions')->name('contributions.')->group(function () {
-      Route::get('/', [ContributionController::class, 'index'])
-        ->name('index');
-      Route::get('/create', [ContributionController::class, 'create'])
-        ->name('create');
-      Route::post('/', [ContributionController::class, 'store'])
-        ->name('store');
-      Route::get('/{contribution}', [ContributionController::class, 'show'])
-        ->name('show');
-      Route::put('/{contribution}', [ContributionController::class, 'update'])
-        ->name('update');
-      Route::delete('/{contribution}', [ContributionController::class, 'destroy'])
-        ->name('destroy');
+      Route::get(
+        '/',
+        [ContributionController::class, 'index']
+      )->name('index');
+
+      Route::get(
+        '/create',
+        [ContributionController::class, 'create']
+      )->name('create');
+
+      Route::post(
+        '/',
+        [ContributionController::class, 'store']
+      )->name('store');
+
+      Route::get(
+        '/{contribution}',
+        [ContributionController::class, 'show']
+      )->name('show');
+
+      Route::put(
+        '/{contribution}',
+        [ContributionController::class, 'update']
+      )->name('update');
+
+      Route::delete(
+        '/{contribution}',
+        [ContributionController::class, 'destroy']
+      )->name('destroy');
     });
 
     // Loans Routes
     Route::prefix('loans')->name('loans.')->group(function () {
-      Route::get('/', [LoanController::class, 'index'])
-        ->name('index');
-      Route::get('/create', [LoanController::class, 'create'])
-        ->name('create');
-      Route::post('/', [LoanController::class, 'store'])
-        ->name('store');
-      Route::get('/{loan}', [LoanController::class, 'show'])
-        ->name('show');
-      Route::put('/{loan}', [LoanController::class, 'update'])
-        ->name('update');
-      Route::delete('/{loan}', [LoanController::class, 'destroy'])
-        ->name('destroy');
+      Route::get(
+        '/',
+        [LoanController::class, 'index']
+      )->name('index');
+
+      Route::get(
+        '/create',
+        [LoanController::class, 'create']
+      )->name('create');
+
+      Route::post(
+        '/',
+        [LoanController::class, 'store']
+      )->name('store');
+
+      Route::get(
+        '/{loan}',
+        [LoanController::class, 'show']
+      )->name('show');
+
+      Route::put(
+        '/{loan}',
+        [LoanController::class, 'update']
+      )->name('update');
+
+      Route::delete(
+        '/{loan}',
+        [LoanController::class, 'destroy']
+      )->name('destroy');
+
     });
   });
 
   // Group Management Routes (Unrestricted)
   Route::prefix('groups')->name('groups.')->group(function () {
-    Route::get('/', [GroupController::class, 'index'])
-      ->name('index');
-    Route::get('/create', [GroupController::class, 'create'])
-      ->name('create');
-    Route::post('/', [GroupController::class, 'store'])
-      ->name('store');
-    Route::post('/{group}/select', [GroupController::class, 'selectActiveGroup'])
-      ->name('select');
+
+    Route::get(
+      '/',
+      [GroupController::class, 'index']
+    )->name('index');
+
+    Route::get(
+      '/create',
+      [GroupController::class, 'create']
+    )->name('create');
+
+    Route::get(
+      '/e/{group:uuid}',
+      [GroupController::class, 'edit']
+    )->name('edit');
+
+    Route::post(
+      '/',
+      [GroupController::class, 'store']
+    )->name('store');
+
+    Route::post(
+      '/select/{group:uuid}',
+      [GroupController::class, 'activate']
+    )->name('set.active');
 
     // Group Settings
-    Route::get('/settings', [GroupSettingsController::class, 'edit'])
-      ->name('settings');
-    Route::put('/settings', [GroupSettingsController::class, 'update'])
-      ->name('settings.update');
+    Route::get(
+      '/settings',
+      [GroupSettingsController::class, 'edit']
+    )->name('settings');
+
+    Route::put(
+      '/settings',
+      [GroupSettingsController::class, 'update']
+    )->name('settings.update');
   });
 
   // Members Routes
   Route::prefix('members')->name('members.')->group(function () {
-    Route::get('/', [GroupMemberController::class, 'index'])
-      ->name('index');
-    Route::post('/invite', [GroupMemberController::class, 'invite'])
-      ->name('invite');
-    Route::post('/{user}/change-role', [GroupMemberController::class, 'changeRole'])
-      ->name('change-role');
-    Route::delete('/{user}', [GroupMemberController::class, 'remove'])
-      ->name('remove');
+    Route::get(
+      '/',
+      [GroupMemberController::class, 'index']
+    )->name('index');
+
+    Route::post(
+      '/invite',
+      [GroupMemberController::class, 'invite']
+    )->name('invite');
+
+    Route::post(
+      '/{user}/change-role',
+      [GroupMemberController::class, 'changeRole']
+    )->name('change-role');
+
+    Route::delete(
+      '/{user}',
+      [GroupMemberController::class, 'remove']
+    )->name('remove');
   });
 });

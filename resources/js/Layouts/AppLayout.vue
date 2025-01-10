@@ -1,10 +1,13 @@
 <script setup>
-import { Toaster } from 'vue-sonner'
+import {Toaster} from 'vue-sonner'
 import SiteHeader from "@/Layouts/Partials/SiteHeader.vue";
 import Sidebar from "@/Layouts/Partials/Sidebar.vue";
 import SiteFooter from "@/Layouts/Partials/SiteFooter.vue";
-import {onMounted, onUnmounted, ref} from "vue";
+import {onMounted, onUnmounted, ref, watch} from "vue";
 import {MenuIcon} from "lucide-vue-next";
+import {usePage} from "@inertiajs/vue3";
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 const isMobile = ref(window.innerWidth < 1024)
 const isSidebarOpen = ref(false)
@@ -29,10 +32,37 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', checkScreenSize)
 })
+
+// Watch for error messages in Inertia props
+watch(
+  () => usePage().props.errors,
+  (errors) => {
+    // Handle generic error message
+    if (errors.message) {
+      toast.error(errors.message, {
+        autoClose: 5000,
+      });
+
+      /*toast.error('Check your action', {
+        description: errors.message,
+        duration: 5000,
+      })*/
+    }
+
+    // Optionally handle specific error types
+    if (errors.authorization) {
+      toast.warning('Access Denied', {
+        description: errors.authorization,
+        duration: 5000,
+      })
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
-  <Toaster :expand="true" />
+  <Toaster class="z-50" :expand="true" richColors />
 
   <div class="h-screen bg-gray-50 dark:bg-gray-900 w-screen overflow-hidden">
     <SiteHeader>

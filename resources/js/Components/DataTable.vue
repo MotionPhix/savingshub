@@ -21,13 +21,20 @@ import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from "@/Components/ui/dropdown-menu";
+import {ArrowRightIcon, ArrowLeftIcon} from "lucide-vue-next";
 
 const props = withDefaults(
   defineProps<{
-    columns: Array<{}>
-    data: Array<{}>
+    columns: Array<{
+      label: string
+      key: string
+    }>
+    data: Array<Record<string, any>>
     hasActions?: boolean
   }>(), {
     hasActions: false
@@ -47,8 +54,10 @@ const getNestedValue = (obj, path) => {
 const filteredAndPaginatedData = computed(() => {
   // Filter
   const filtered = props.data.filter(row =>
-    Object.values(row).some(value =>
-      String(value).toLowerCase().includes(searchQuery.value.toLowerCase())
+    props.columns.some(column =>
+      String(getNestedValue(row, column.key))
+        .toLowerCase()
+        .includes(searchQuery.value.toLowerCase())
     )
   )
 
@@ -164,7 +173,8 @@ const exportToCSV = () => {
           <TableHead v-for="column in columns" :key="column.key">
             {{ column.label }}
           </TableHead>
-          <TableHead v-if="hasActions">Actions</TableHead>
+
+          <TableHead v-if="hasActions" />
         </TableRow>
       </TableHeader>
 
@@ -173,29 +183,32 @@ const exportToCSV = () => {
           <TableCell v-for="column in columns" :key="column.key">
             {{ getNestedValue(row, column.key) }}
           </TableCell>
-          <TableCell v-if="hasActions">
+
+          <TableCell v-if="hasActions" align="end">
             <slot name="actions" :row="row"></slot>
           </TableCell>
         </TableRow>
       </TableBody>
     </Table>
 
-    <div class="pagination mt-4 flex justify-between items-center">
+    <div class="pagination mt-4 flex justify-between items-center" v-if="data.length > 10">
       <div>
         Showing {{ startIndex }} to {{ endIndex }} of {{ totalItems }} entries
       </div>
 
       <div class="flex space-x-2">
         <Button
+          size="icon"
           :disabled="currentPage === 1"
           @click="prevPage">
-          Previous
+          <ArrowLeftIcon />
         </Button>
 
         <Button
+          size="icon"
           :disabled="currentPage === totalPages"
           @click="nextPage">
-          Next
+          <ArrowRightIcon />
         </Button>
       </div>
     </div>

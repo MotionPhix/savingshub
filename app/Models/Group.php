@@ -255,16 +255,38 @@ class Group extends Model
   // Computed attributes
   public function getPendingContributionsCountAttribute()
   {
-    return $this->contributions()->pending()->count();
+    return Contribution::query()
+      ->whereHas('groupMember', function ($query) {
+        $query->where('group_id', $this->id)
+          ->where('group_members.status', 'active'); // Ensure active group members
+      })
+      ->where('contributions.status', 'pending')
+      ->count();
   }
+
+  /*public function getPendingLoanRequestsCountAttribute()
+  {
+    return Loan::query()
+      ->join('group_members', 'loans.group_member_id', '=', 'group_members.id')
+      ->where('group_members.group_id', $this->id)
+      ->where('loans.status', 'pending')
+      ->count();
+  }*/
 
   public function getPendingLoanRequestsCountAttribute()
   {
-    return $this->loans()->pending()->count();
+    return Loan::pendingInGroup($this->id)->count();
   }
+
+  /*public function getPendingInvitationsCountAttribute()
+  {
+    return $this->members()->wherePivot('status', 'invited')->count();
+  }*/
 
   public function getPendingInvitationsCountAttribute()
   {
-    return $this->members()->wherePivot('status', 'invited')->count();
+    return $this->members()
+      ->where('status', 'invited')
+      ->count();
   }
 }

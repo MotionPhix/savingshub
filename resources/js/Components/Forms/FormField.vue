@@ -8,10 +8,19 @@ import {Textarea} from "@/Components/ui/textarea";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/Components/ui/select";
 import {RadioGroup, RadioGroupItem} from "@/Components/ui/radio-group";
 import Checkbox from "@/Components/Checkbox.vue";
+import {
+  NumberField,
+  NumberFieldContent,
+  NumberFieldDecrement,
+  NumberFieldIncrement,
+  NumberFieldInput,
+} from '@/components/ui/number-field'
+import {usePage} from "@inertiajs/vue3";
 
 const props = withDefaults(defineProps<{
   label?: string
   type?: string
+  format?: string
   placeholder?: string
   required?: boolean
   disabled?: boolean
@@ -25,19 +34,24 @@ const props = withDefaults(defineProps<{
   containerClass?: string
   orientation?: string
   autocomplete?: string
-  min?: string | number
-  max?: string | number
-  step?: string | number
+  min?: number
+  max?: number
+  step?: number
 }>(), {
   type: 'text',
   required: false,
   disabled: false,
   variant: 'default',
-  orientation: 'vertical'
+  orientation: 'vertical',
+  min: 0,
+  max: 100
 })
 
 const model = defineModel()
+const page = usePage()
 const id = uuidv4()
+
+const currency = page.props?.currency ?? 'MWK'
 
 // Computed classes
 const inputClasses = computed(() => {
@@ -149,6 +163,23 @@ const containerClasses = computed(() => props.containerClass || 'mb-4')
               {{ placeholder }}
             </label>
           </div>
+        </template>
+
+        <template v-else-if="type === 'number'">
+          <NumberField
+            v-model="model" :step="step"
+            :id="id" :max="max" :min="min"
+            :format-options="{
+              style: format,
+              currency: currency,
+              currencySign: 'accounting',
+            }">
+            <NumberFieldContent>
+              <NumberFieldDecrement />
+              <NumberFieldInput />
+              <NumberFieldIncrement />
+            </NumberFieldContent>
+          </NumberField>
         </template>
 
         <template v-else>
