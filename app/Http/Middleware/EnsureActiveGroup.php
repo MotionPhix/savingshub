@@ -16,9 +16,12 @@ class EnsureActiveGroup
     'groups.store',
     'groups.set.active',
     'groups.store',
+    'groups.invite.accept',
+    'groups.invite.send',
     'profile.index',
     'profile.avatar.destroy',
-    'profile.update'
+    'profile.update',
+    'logout'
   ];
 
   public function __construct(

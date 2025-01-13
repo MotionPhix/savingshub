@@ -10,9 +10,10 @@ import MemberList from "./Partials/MemberList.vue"
 import FinancialInsights from "./Partials/FinancialInsights.vue"
 import ContributionChart from "./Partials/ContributionChart.vue"
 import LoanAnalytics from "./Partials/LoanAnalytics.vue"
-import GroupOverview from "@/Pages/Groups/Partials/GroupOverview.vue";
-import {Separator} from "@/Components/ui/separator";
-import {formatCurrency} from "@/lib/formatters";
+import GroupOverview from "@/Pages/Groups/Partials/GroupOverview.vue"
+import {Separator} from "@/Components/ui/separator"
+import {formatCurrency} from "@/lib/formatters"
+import { visitModal } from '@inertiaui/modal-vue'
 
 // Props definition
 const props = withDefaults(
@@ -72,7 +73,9 @@ const editGroup = () => {
 
 const inviteMembers = () => {
   // Open invite members modal or navigate to invite page
-  router.visit(route('groups.invite', props.group.uuid))
+  visitModal(route('groups.invite.form', props.group.uuid), {
+    navigate: true
+  })
 }
 </script>
 
@@ -97,6 +100,7 @@ const inviteMembers = () => {
             variant="outline">
             Edit Group
           </Button>
+
           <Button
             v-if="canManageGroup"
             @click="inviteMembers">

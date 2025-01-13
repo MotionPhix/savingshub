@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {router, usePage} from '@inertiajs/vue3'
+import {router, usePage, Link} from '@inertiajs/vue3'
 import {
   UserIcon,
   UsersIcon,
@@ -36,7 +36,7 @@ const {getInitials} = useInitials()
       </div>
     </DropdownMenuTrigger>
 
-    <DropdownMenuContent align="start">
+    <DropdownMenuContent align="end">
       <DropdownMenuItem
         @click="router.visit(route('profile.edit'), { replace: true })">
         <UserIcon class="w-4 h-4 mr-2"/>
@@ -65,12 +65,15 @@ const {getInitials} = useInitials()
 
       <DropdownMenuSeparator />
 
-      <DropdownMenuItem
-        :href="route('logout')"
-        method="post"
-        as="button">
-        <PowerIcon class="w-4 h-4 mr-2"/>
-        Log Out
+      <DropdownMenuItem>
+        <Link
+          as="button"
+          method="delete"
+          class="w-full flex items-center gap-2"
+          :href="route('logout')">
+          <PowerIcon class="w-4 h-4 mr-2"/>
+          Log Out
+        </Link>
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

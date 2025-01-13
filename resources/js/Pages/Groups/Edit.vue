@@ -318,8 +318,7 @@ const groupStatistics = computed(() => ({
               </Button>
               <Button
                 type="submit"
-                :disabled="processing"
-              >
+                :disabled="processing">
                 {{ processing ? 'Updating...' : 'Update Group' }}
               </Button>
             </div>
