@@ -2,11 +2,11 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\MailMessage;
 use App\Models\Group;
-use App\Models\GroupMember;
+use App\Models\GroupInvitation;
+use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class GroupInvitationNotification extends Notification
 {
@@ -14,30 +14,39 @@ class GroupInvitationNotification extends Notification
 
   protected $group;
   protected $invitation;
+  protected $customMessage;
 
-  public function __construct(Group $group, GroupMember $invitation)
+  public function __construct(Group $group, GroupInvitation $invitation, ?string $customMessage = null)
   {
     $this->group = $group;
     $this->invitation = $invitation;
+    $this->customMessage = $customMessage;
+  }
+
+  public function via($notifiable)
+  {
+    return ['mail'];
   }
 
   public function toMail($notifiable)
   {
-    return (new MailMessage)
-      ->subject("Invitation to Join {$this->group->name}")
+    $mailMessage = (new MailMessage)
+      ->subject("You've been invited to join {$this->group->name}")
+      ->greeting("Hello!")
       ->line("You have been invited to join the group: {$this->group->name}")
-      ->action('Accept Invitation', route('groups.accept-invitation', $this->group));
-  }
+      ->line("Invitation Role: " . ucfirst($this->invitation->role));
 
-  public function toDatabase($notifiable)
-  {
-    return [
-      'group_id' => $this->group->id,
-      'group_name' => $this->group->name,
-      'invitation_id' => $this->invitation->id,
-      'type' => 'group_invitation',
-      'message' => "Invited to join {$this->group->name}",
-      'action_url' => route('groups.accept-invitation', $this->group)
-    ];
+    // Add custom message if provided
+    if ($this->customMessage) {
+      $mailMessage->line("Personal Message: {$this->customMessage}");
+    }
+
+    $mailMessage->action(
+      'Accept Invitation',
+      route('groups.invite.accept', $this->invitation->token)
+    )->line('This invitation will expire in 7 days.')
+      ->line('If you did not expect this invitation, you can ignore this email.');
+
+    return $mailMessage;
   }
 }

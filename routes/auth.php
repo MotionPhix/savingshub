@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ContributionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\GroupInvitationController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -75,7 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     [PasswordController::class, 'update']
   )->name('password.update');
 
-  Route::post(
+  Route::delete(
     'logout',
     [AuthenticatedSessionController::class, 'destroy']
   )->name('logout');
@@ -123,6 +124,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [GroupController::class, 'updateSettings']
       )->name('settings');
 
+      Route::get(
+        '/invite-form/{group:uuid}',
+        [GroupController::class, 'showInvite']
+      )->name('invite.form');
+
+      Route::post(
+        '/invite',
+        [GroupController::class, 'invite']
+      )->name('invite.send');
+
+      Route::post(
+        '/invitations/{invitation}/resend',
+        [GroupInvitationController::class, 'resendInvitation']
+      )->name('invite.resend')
+        ->middleware('can:resend,invitation');
     });
 
     // Contributions Routes
@@ -220,6 +236,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
       '/select/{group:uuid}',
       [GroupController::class, 'activate']
     )->name('set.active');
+
+    // Group Invitation Routes
+    Route::get(
+      '/invitations/{token}/accept',
+      [GroupInvitationController::class, 'accept']
+    )->name('invite.accept')
+      ->middleware('signed');
+
+    Route::get(
+      '/invitations/{token}/decline',
+      [GroupInvitationController::class, 'decline']
+    )->name('invite.decline')
+      ->middleware('signed');
   });
 
   // Members Routes
@@ -228,11 +257,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
       '/',
       [GroupMemberController::class, 'index']
     )->name('index');
-
-    Route::post(
-      '/invite',
-      [GroupMemberController::class, 'invite']
-    )->name('invite');
 
     Route::post(
       '/{user}/change-role',

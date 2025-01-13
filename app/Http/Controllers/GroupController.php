@@ -326,25 +326,33 @@ class GroupController extends Controller implements HasMiddleware
 
   public function store(Request $request): RedirectResponse
   {
+    // Validate group creation
     $validatedData = $request->validate([
       'name' => 'required|string|max:255|unique:groups,name',
-      // ... other validation rules
+      'start_date' => 'required|date|after:' . now()->addDay()->format('Y-m-d'),
+      'end_date' => [
+        'required', 'date'
+      ],
+      'description' => 'nullable|string|max:1000',
+      'contribution_frequency' => 'required|in:weekly,monthly,quarterly,annually',
+      'contribution_amount' => 'required|numeric|min:1',
+      'duration_months' => 'required|integer|min:1|max:36',
+      'loan_interest_type' => 'required|in:fixed,variable,tiered',
+      'base_interest_rate' => 'required|numeric|min:0|max:100',
+      'max_loan_amount' => 'nullable|numeric|min:0',
+      'require_group_approval' => 'boolean'
     ]);
 
-    DB::beginTransaction();
-
     try {
+      // Create group using service
       $group = $this->groupService->createGroup(
         $request->user(),
         $validatedData
       );
 
-      DB::commit();
-
       return redirect()->route('groups.show', $group->uuid)
         ->with('success', 'Group created successfully');
     } catch (\Exception $e) {
-      DB::rollBack();
       return back()->withErrors(['message' => $e->getMessage()]);
     }
   }
@@ -375,33 +383,44 @@ class GroupController extends Controller implements HasMiddleware
     });
   }
 
+  public function showInvite(Group $group) {
+    return Inertia::modal('Groups/Partials/InviteMembers', [
+      'group' => $group
+    ])->baseUrl('/groups');
+  }
+
   // Add rate limiting to sensitive methods
-  public function inviteMembers(Request $request, Group $group)
+  public function invite(Request $request)
   {
-    // Limit invites to prevent spam
-    $request->validate([
-      'emails' => [
-        'required',
-        'array',
-        'max:10' // Limit number of invites
-      ],
-      'emails.*' => 'email|exists:users,email'
+    // Validate input
+    $validated = $request->validate([
+      'emails' => 'required|array|max:10',
+      'emails.*' => 'email|unique:users,email',
+      'role' => 'in:member,treasurer,secretary',
+      'message' => 'nullable|string|max:500'
     ]);
 
     // Implement rate limiting
-    if (RateLimiter::tooManyAttempts('invite-members:' . $group->id, 5)) {
+    if (RateLimiter::tooManyAttempts('invite-members:' .  session('active_group_id'), 5)) {
       return back()->withErrors([
         'message' => 'Too many invitation attempts. Please try again later.'
       ]);
     }
 
     try {
-      $invitations = $this->groupService->inviteMembers(
-        $group,
-        $request->input('emails')
+      $responses = $this->groupService->inviteMembers(
+        $request->input('emails'),
+        $request->message
       );
 
-      return back()->with('success', 'Invitations sent successfully');
+      // Return with appropriate message
+      if (count($responses['failed']) > 0) {
+        return back()->with('warning', 'Some invitations could not be sent.')
+          ->with('invitationResponse', $responses);
+      }
+
+      return back()->with('success', 'Invitations sent successfully!')
+        ->with('invitationResponse', $responses);
     } catch (\Exception $e) {
       return back()->withErrors(['message' => $e->getMessage()]);
     }

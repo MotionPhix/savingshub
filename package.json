@@ -14,7 +14,7 @@
     "@variantjs/vue": "^0.0.22",
     "@vee-validate/zod": "^4.15.0",
     "@vitejs/plugin-vue": "^5.0.0",
-    "@vueuse/core": "^12.3.0",
+    "@vueuse/core": "^12.4.0",
     "apexcharts": "^4.3.0",
     "autoprefixer": "^10.4.12",
     "axios": "^1.7.4",
@@ -48,5 +48,8 @@
     "vue3-toastify": "^0.2.8",
     "xlsx": "^0.18.5",
     "zod": "^3.24.1"
+  },
+  "dependencies": {
+    "v-calendar": "^3.1.2"
   }
 }

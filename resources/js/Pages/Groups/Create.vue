@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import {router, useForm} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import FormField from '@/Components/Forms/FormField.vue'
@@ -6,6 +6,13 @@ import {Button} from "@/Components/ui/button/index.js";
 import {computed, ref, watch} from "vue";
 import {toast} from "vue-sonner";
 import {Separator} from "@/Components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover'
+import { Calendar } from '@/Components/ui/v-calendar'
+import { format } from 'date-fns'
+import { Calendar as CalendarIcon } from 'lucide-vue-next'
+import { cn } from '@/lib/utils'
+import {truncateText} from "@/lib/formatters";
+import InputError from "@/Components/InputError.vue";
 
 const form = useForm({
   name: '',
@@ -32,17 +39,29 @@ const form = useForm({
 
 function getWeekFromToday() {
   const today = new Date();
-  const weekFromToday = new Date(today.setDate(today.getDate() + 8));
+  const weekFromToday = new Date(today.setDate(today.getDate() + 7));
   return weekFromToday.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 }
 
 function calculateEndDate() {
   if (form.start_date && form.duration_months) {
     const startDate = new Date(form.start_date);
-    const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + form.duration_months, startDate.getDate());
+    const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + form.duration_months, startDate.getDate() - 1);
     form.end_date = endDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
   }
 }
+
+const formattedStartDate = computed(() => {
+  return form.start_date
+    ? format(new Date(form.start_date), 'PPPP')
+    : 'Pick a date'
+})
+
+const formattedEndDate = computed(() => {
+  return form.end_date
+    ? format(new Date(form.end_date), 'PPPP')
+    : 'Based on start date and duration'
+})
 
 const minLoanDuration = computed(() => {
   switch (form.contribution_frequency) {
@@ -142,6 +161,64 @@ watch(() => form.duration_months, calculateEndDate);
               :error="form.errors.mission_statement"
               placeholder="Optional group mission"
             />
+          </div>
+
+          <div
+            class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Start Date
+              </label>
+              <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="outline"
+                    :class="cn(
+                      'w-full min-h-10 justify-start text-left font-normal',
+                      !form.start_date && 'text-muted-foreground'
+                    )">
+                    <CalendarIcon class="mr-2 h-4 w-4" />
+                    {{ formattedStartDate }}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-auto p-0">
+                  <Calendar
+                    v-model="form.start_date"
+                    mode="single"
+                    initial-focus
+                    @update:model-value="calculateEndDate"
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <InputError class="mt-1" :message="form.errors.start_date" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                End Date
+              </label>
+              <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="outline"
+                    :class="cn(
+                      'w-full justify-start min-h-10 text-left font-normal cursor-not-allowed',
+                      'text-muted-foreground'
+                    )"
+                    disabled>
+                    <CalendarIcon class="mr-2 h-4 w-4" />
+                    {{ truncateText(formattedEndDate) }}
+                  </Button>
+                </PopoverTrigger>
+              </Popover>
+
+              <p class="mt-1 text-xs text-gray-500">
+                Automatically calculated
+              </p>
+            </div>
+
           </div>
 
           <FormField
