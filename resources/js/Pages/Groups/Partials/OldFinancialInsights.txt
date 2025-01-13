@@ -1,0 +1,254 @@
+<script setup lang="ts">
+import {computed, ref} from 'vue'
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs"
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/Components/ui/table";
+import { Pie } from 'vue-chartjs'
+
+const props = defineProps({
+  summary: {
+    type: Object,
+    default: () => ({})
+  },
+  contributionInsights: {
+    type: Object,
+    default: () => ({})
+  },
+  loanInsights: {
+    type: Object,
+    default: () => ({})
+  }
+})
+
+const activeTab = ref('overview')
+
+// Contribution Type Chart Data
+const contributionTypeChartData = computed(() => ({
+  labels: props.contributionInsights.contribution_types?.map(t => t.type) || [],
+  datasets: [{
+    label: 'Contribution Amounts',
+    data: props.contributionInsights.contribution_types?.map(t => t.total_amount) || [],
+    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+  }]
+}))
+
+// Loan Status Chart Data
+const loanStatusChartData = computed(() => ({
+  labels: props.loanInsights.loan_status_breakdown?.map(s => s.status) || [],
+  datasets: [{
+    label: 'Loan Amounts',
+    data: props.loanInsights.loan_status_breakdown?.map(s => s.total_amount) || [],
+    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+  }]
+}))
+</script>
+
+<template>
+  <div>
+    <Tabs v-model="activeTab">
+      <TabsList>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="contributions">Contributions</TabsTrigger>
+        <TabsTrigger value="loans">Loans</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="overview">
+        <div class="grid md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div class="space-y-4">
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Total Contributions</span>
+                  <span>
+                    {{ new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                  }).format(summary.total_contributions || 0) }}
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Total Loans Disbursed</span>
+                  <span>
+                    {{ new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                  }).format(summary.total_loans_disbursed || 0) }}
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Total Loans Repaid</span>
+                  <span>
+                    {{ new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                  }).format(summary.total_loans_repaid || 0) }}
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Average Contribution</span>
+                  <span>
+                    {{ new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                  }).format(summary.average_contribution || 0) }}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Health Indicators</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div class="space-y-4">
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Loan to Contribution Ratio</span>
+                  <span>
+                    {{ ((summary.total_loans_disbursed / summary.total_contributions) * 100).toFixed(2) }}%
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Repayment Rate</span>
+                  <span>
+                    {{ ((summary.total_loans_repaid / summary.total_loans_disbursed) * 100).toFixed(2) }}%
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="contributions">
+        <div class="grid md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contribution Types</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Pie
+                :data="contributionTypeChartData"
+                :options="{
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      position: 'top',
+                    },
+                    title: {
+                      display: true,
+                      text: 'Contribution Types Distribution'
+                    }
+                  }
+                }"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Contribution Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Count</TableHead>
+                    <TableHead>Total Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow
+                    v-for="status in contributionInsights.contribution_status_breakdown"
+                    :key="status.status">
+                    <TableCell>{{ status.status }}</TableCell>
+                    <TableCell>{{ status.count }}</TableCell>
+                    <TableCell>
+                      {{ new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD'
+                    }).format(status.total_amount) }}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="loans">
+        <div class="grid md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Loan Status Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Pie
+                :data="loanStatusChartData"
+                :options="{
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      position: 'top',
+                    },
+                    title: {
+                      display: true,
+                      text: 'Loan Status Distribution'
+                    }
+                  }
+                }"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Borrowers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Loan Count</TableHead>
+                    <TableHead>Total Borrowed</TableHead>
+                    <TableHead>Total Repaid</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow
+                    v-for="borrower in loanInsights.top_borrowers"
+                    :key="borrower.id"
+                  >
+                    <TableCell>{{ borrower.name }}</TableCell>
+                    <TableCell>{{ borrower.loan_count }}</TableCell>
+                    <TableCell>
+                      {{ new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD'
+                    }).format(borrower.total_borrowed) }}
+                    </TableCell>
+                    <TableCell>
+                      {{ new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD'
+                    }).format(borrower.total_repaid) }}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
+    </Tabs>
+  </div>
+</template>

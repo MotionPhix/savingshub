@@ -10,17 +10,21 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable /*implements MustVerifyEmail*/
+class User extends Authenticatable implements HasMedia /*implements MustVerifyEmail*/
 {
   use HasFactory,
     Notifiable,
     HasRoles,
     BootUuid,
     SoftDeletes,
-    HasApiTokens;
+    HasApiTokens,
+    InteractsWithMedia;
 
   protected $fillable = [
     'name',
@@ -32,7 +36,6 @@ class User extends Authenticatable /*implements MustVerifyEmail*/
     'max_groups',
     'subscription_ends_at',
     'phone_number',
-    'avatar',
     'bio',
     'timezone',
     'locale'
@@ -43,6 +46,10 @@ class User extends Authenticatable /*implements MustVerifyEmail*/
     'remember_token',
   ];
 
+  protected $appends = [
+    'avatar'
+  ];
+
   protected function casts(): array
   {
     return [
@@ -50,6 +57,38 @@ class User extends Authenticatable /*implements MustVerifyEmail*/
       'password' => 'hashed',
       'subscription_ends_at' => 'datetime',
     ];
+  }
+
+  public function registerMediaCollections(): void
+  {
+    $this->addMediaCollection('avatar')
+      ->singleFile() // Ensures only one avatar is kept
+      ->useFallbackUrl(url($this->defaultAvatar($this->gender)))
+      ->registerMediaConversions(function (Media $media) {
+        $this->addMediaConversion('thumb')
+          ->width(150)
+          ->height(150)
+          ->sharpen(10);
+
+        $this->addMediaConversion('medium')
+          ->width(300)
+          ->height(300);
+      });
+  }
+
+  // Convenience method to get avatar URL
+  public function getAvatarAttribute()
+  {
+    return $this->getFirstMediaUrl('avatar', 'thumb')
+      ?: $this->getFirstMediaUrl('avatar')
+        ?: url($this->defaultAvatar($this->gendeer));
+  }
+
+  private function defaultAvatar(string $gender = null)
+  {
+    return $gender
+      ? $gender === 'male' ? '/default-m-avatar.png' : '/default-f-avatar.png'
+      : '/default-m-avatar.png';
   }
 
   // Relationships

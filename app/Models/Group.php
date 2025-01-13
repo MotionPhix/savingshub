@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\GroupActivityService;
 use App\Services\LoanInterest\FixedInterestCalculator;
 use App\Services\LoanInterest\TieredInterestCalculator;
 use App\Services\LoanInterest\VariableInterestCalculator;
@@ -54,11 +55,6 @@ class Group extends Model
     'notification_preferences' => 'array'
   ];
 
-  protected $hidden = [
-    'settings',
-    'notification_preferences'
-  ];
-
   protected $appends = [
     'pending_contributions_count',
     'pending_loan_requests_count',
@@ -108,9 +104,63 @@ class Group extends Model
     return $query->where('status', 'active');
   }
 
+  public function scopeActiveMembership($query)
+  {
+    return $query->whereHas('members', function($q) {
+      $q->where('status', 'active')
+        ->where('user_id', auth()->id());
+    });
+  }
+
+  public function getUserRoleAttribute()
+  {
+    $membership = $this->members->first(fn($member) => $member->user_id === auth()->id());
+    return $membership ? $membership->role : null;
+  }
+
   public function scopePublic($query)
   {
     return $query->where('is_public', true);
+  }
+
+  // Add relationship
+  public function activities()
+  {
+    return $this->hasMany(GroupActivity::class);
+  }
+
+  // Helper methods to log activities
+  public function logMemberJoined(User $user)
+  {
+    $this->logActivity('member_joined', $user);
+  }
+
+  public function logContributionMade(User $user, float $amount)
+  {
+    $this->logActivity('contribution_made', $user, [
+      'amount' => $amount
+    ]);
+  }
+
+  public function logLoanRequested(User $user, float $amount)
+  {
+    $this->logActivity('loan_requested', $user, [
+      'amount' => $amount
+    ]);
+  }
+
+  private function logActivity(
+    string $type,
+    ?User $user = null,
+    ?array $metadata = null
+  ) {
+    app(GroupActivityService::class)->log(
+      $this,
+      $type,
+      $user,
+      null,
+      $metadata
+    );
   }
 
   // Utility Methods

@@ -46,6 +46,7 @@ return new class extends Migration {
         'variable',
         'tiered'
       ])->default('fixed');
+
       $table->decimal('base_interest_rate', 5, 2)->default(5.00);
       $table->json('interest_tiers')->nullable();
       $table->decimal('max_loan_amount', 10, 2)->nullable();

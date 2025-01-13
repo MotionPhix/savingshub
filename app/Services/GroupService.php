@@ -6,10 +6,36 @@ namespace App\Services;
 use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class GroupService
 {
+  // This allows a user to deal with one group at a time. all actions taken will be
+  // on the activated group until a user explicitly switches to another group
+  public function activateGroup(Request $request, Group $group): void
+  {
+    DB::transaction(function () use ($request, $group) {
+      // Verify user is a member of the group
+      $groupMember = GroupMember::where('group_id', $group->id)
+        ->where('user_id', Auth::id())
+        ->where('status', 'active')
+        ->first();
+
+      // If not a member, throw authorization exception
+      if (!$groupMember) {
+        abort(403, 'You are not a member of this group');
+      }
+
+      // Store the active group in the session
+      $request->session()->put('active_group_id', $group->id);
+
+      // Optional: You can also store the user's role in the group
+      $request->session()->put('active_group_role', $groupMember->role);
+    });
+  }
+
   public function createGroup(User $user, array $data): Group
   {
     return DB::transaction(function () use ($user, $data) {
@@ -173,5 +199,67 @@ class GroupService
   {
     $group->members()->delete(); // Remove all members
     $group->delete(); // Delete the group
+  }
+
+  public function updateSettings(Group $group, array $data, User $user): Group
+  {
+    // Merge existing settings with new settings
+    $currentSettings = $group->settings ?? [];
+    $currentNotificationPreferences = $group->notification_preferences ?? [];
+
+    // Update settings
+    if (isset($data['settings'])) {
+      $mergedSettings = array_merge($currentSettings, $data['settings']);
+      $group->setAttribute('settings', $mergedSettings);
+    }
+
+    // Update notification preferences
+    if (isset($data['notification_preferences'])) {
+      $mergedNotificationPreferences = array_merge(
+        $currentNotificationPreferences,
+        $data['notification_preferences']
+      );
+
+      $group->setAttribute(
+        'notification_preferences',
+        $mergedNotificationPreferences
+      );
+    }
+
+    // Update other group attributes
+    $updateFields = [
+      'is_public',
+      'allow_member_invites',
+      'contribution_frequency',
+      'contribution_amount'
+    ];
+
+    foreach ($updateFields as $field) {
+      if (isset($data[$field])) {
+        $group->setAttribute($field, $data[$field]);
+      }
+    }
+
+    // Save the changes
+    $group->save();
+
+    // Log the settings update
+    /*activity()
+      ->performedOn($group)
+      ->causedBy($user)
+      ->log('Group settings updated');*/
+
+    return $group;
+  }
+
+  public function validateGroupSettingsUpdate(Group $group, User $user): bool
+  {
+    // Additional custom validation logic
+    return $group->creator_id === $user->id ||
+      $user->hasRole('admin') ||
+      $group->members()
+        ->where('user_id', $user->id)
+        ->where('role', 'admin')
+        ->exists();
   }
 }

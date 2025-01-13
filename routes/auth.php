@@ -92,7 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   )->name('profile.index');
 
   Route::patch(
-    '/profile',
+    '/profile/{user:uuid}',
     [ProfileController::class, 'update']
   )->name('profile.update');
 
@@ -101,8 +101,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     [ProfileController::class, 'destroy']
   )->name('profile.destroy');
 
+  Route::delete(
+    '/profile',
+    [ProfileController::class, 'deleteAvatar']
+  )->name('profile.avatar.destroy');
+
   // Group Routes (Requires active group middleware)
   Route::middleware('active.group')->group(function () {
+
+    // groups
+    Route::prefix('groups')->name('groups.')->group(function () {
+
+      Route::get(
+        '/g/{group:uuid}',
+        [GroupController::class, 'show']
+      )->name('show');
+
+      // Group Settings
+      Route::patch(
+        '/u/settings/{group:uuid}',
+        [GroupController::class, 'updateSettings']
+      )->name('settings');
+
+    });
+
     // Contributions Routes
     Route::prefix('contributions')->name('contributions.')->group(function () {
       Route::get(
@@ -198,17 +220,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
       '/select/{group:uuid}',
       [GroupController::class, 'activate']
     )->name('set.active');
-
-    // Group Settings
-    Route::get(
-      '/settings',
-      [GroupSettingsController::class, 'edit']
-    )->name('settings');
-
-    Route::put(
-      '/settings',
-      [GroupSettingsController::class, 'update']
-    )->name('settings.update');
   });
 
   // Members Routes

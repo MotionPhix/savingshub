@@ -1,0 +1,63 @@
+<script setup>
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card"
+import ActivityTimeline from "./ActivityTimeline.vue"
+
+const props = defineProps({
+  group: Object,
+  stats: Object,
+  recentActivities: Array
+})
+
+const groupDetails = [
+  {
+    label: 'Start Date',
+    value: props.group.start_date
+  },
+  {
+    label: 'End Date',
+    value: props.group.end_date
+  },
+  {
+    label: 'Contribution Frequency',
+    value: props.group.contribution_frequency
+  },
+  {
+    label: 'Contribution Amount',
+    value: new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(props.group.contribution_amount)
+  }
+]
+</script>
+
+<template>
+  <div class="grid md:grid-cols-2 gap-6">
+    <Card>
+      <CardHeader>
+        <CardTitle>Group Details</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div class="space-y-4">
+          <div
+            v-for="detail in groupDetails"
+            :key="detail.label"
+            class="flex justify-between"
+          >
+            <span class="text-muted-foreground">{{ detail.label }}</span>
+            <span>{{ detail.value }}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Activities</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ActivityTimeline :activities="recentActivities" />
+      </CardContent>
+    </Card>
+  </div>
+</template>

@@ -26,7 +26,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/Components/ui/dropdown-menu";
-import {ArrowRightIcon, ArrowLeftIcon} from "lucide-vue-next";
+import {
+  ArrowRightIcon,
+  ArrowLeftIcon,
+  ExternalLinkIcon
+} from "lucide-vue-next";
 
 const props = withDefaults(
   defineProps<{
@@ -138,10 +142,10 @@ const exportToCSV = () => {
         <Input
           v-model="searchQuery"
           placeholder="Search..."
-          class="w-64"
+          class="w-56"
         />
         <Select v-model="perPage">
-          <SelectTrigger class="w-[180px]">
+          <SelectTrigger class="w-[130px]">
             <SelectValue placeholder="Rows per page"/>
           </SelectTrigger>
 
@@ -153,10 +157,12 @@ const exportToCSV = () => {
         </Select>
       </div>
 
-      <div class="export-actions flex space-x-2">
+      <div>
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
-            <Button>Export</Button>
+            <Button size="icon">
+              <ExternalLinkIcon />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem @click="exportToPDF">Export PDF</DropdownMenuItem>

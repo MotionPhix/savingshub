@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.js';
 import { useVModel } from '@vueuse/core';
 
 const props = defineProps({

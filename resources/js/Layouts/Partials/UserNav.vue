@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import {router, usePage} from '@inertiajs/vue3'
 import {
   UserIcon,
@@ -14,20 +14,11 @@ import {
   DropdownMenuContent,
   DropdownMenuSeparator
 } from "@/Components/ui/dropdown-menu";
-import {
-  AvatarImage,
-  Avatar,
-  AvatarFallback
-} from "@/Components/ui/avatar";
-
-const props = defineProps({
-  defaultAvatar: {
-    type: String,
-    default: '/default-avatar.png'
-  }
-})
+import UserAvatar from "@/Layouts/Partials/UserAvatar.vue";
+import {useInitials} from '@/composables/useInitials'
 
 const {user} = usePage().props.auth
+const {getInitials} = useInitials()
 </script>
 
 <template>
@@ -35,13 +26,9 @@ const {user} = usePage().props.auth
   <DropdownMenu :modal="false">
     <DropdownMenuTrigger>
       <div class="flex items-center space-x-2">
-        <Avatar>
-          <AvatarImage
-            :src="user.avatar || defaultAvatar"
-            :alt="user.name"/>
-
-          <AvatarFallback>HG</AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          :size="8"
+          :fallback="getInitials(user.name)" />
 
         <span class="hidden md:block">
             {{ user.name }}

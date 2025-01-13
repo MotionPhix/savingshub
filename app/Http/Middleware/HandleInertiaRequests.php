@@ -32,10 +32,17 @@ class HandleInertiaRequests extends Middleware
     return [
       ...parent::share($request),
       'auth' => [
-        'user' => $request->user(),
+        'user' => fn() => $request->user()?->only(['name', 'gender', 'avatar', 'account_status', 'locale', 'timezone']),
+        'can' => [
+          'create_group' => fn() => $request->user()?->canCreateGroup(),
+        ],
       ],
 
-      'appName' => env('app_name')
+      'appName' => env('app_name'),
+      'currency' => fn() => session('active_group_id')
+        ? \App\Models\Group::where('id', session('active_group_id'))->first()->settings['currency']
+        : 'ZAR',
+
     ];
   }
 }

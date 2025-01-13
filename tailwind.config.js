@@ -63,6 +63,7 @@ export default {
       },
       fontFamily: {
         sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+        serif: ['DM Serif Display', ...defaultTheme.fontFamily.serif],
       },
       keyframes: {
         'accordion-down': {

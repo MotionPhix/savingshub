@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.js';
 import { DialogDescription, useForwardProps } from 'radix-vue';
 import { computed } from 'vue';
 

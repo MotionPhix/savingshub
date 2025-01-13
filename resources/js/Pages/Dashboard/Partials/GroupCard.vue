@@ -1,5 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ChevronRightIcon } from 'lucide-vue-next'
+import {useInitials} from "@/composables/useInitials";
+import {formatCurrency} from "../../../lib/formatters";
+import {usePage} from "@inertiajs/vue3";
 
 const props = defineProps({
   group: {
@@ -9,6 +12,9 @@ const props = defineProps({
 })
 
 defineEmits(['select'])
+
+const { getInitials } = useInitials()
+const currency = usePage().props.currency
 
 const getGroupColor = (id) => {
   // Generate a consistent color based on group ID
@@ -28,15 +34,6 @@ const getMemberRole = (group) => {
     default: return 'Member'
   }
 }
-
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount)
-}
 </script>
 
 <template>
@@ -50,7 +47,7 @@ const formatCurrency = (amount) => {
           class="w-12 h-12 rounded-full flex items-center justify-center"
           :style="{ backgroundColor: getGroupColor(group.id) }">
           <span class="text-white font-bold">
-            {{ group.name.charAt(0).toUpperCase() }}
+            {{ getInitials(group.name).toUpperCase() }}
           </span>
         </div>
 
@@ -75,7 +72,7 @@ const formatCurrency = (amount) => {
 
         <p class="text-xs text-gray-500">Contributions</p>
         <p class="font-bold">
-          {{ formatCurrency(group.total_contributions || 0) }}
+          {{ formatCurrency(group.total_contributions || 0, currency) }}
         </p>
 
       </div>
@@ -83,7 +80,7 @@ const formatCurrency = (amount) => {
       <div>
         <p class="text-xs text-gray-500">Loans</p>
         <p class="font-bold">
-          {{ formatCurrency(group.total_loans || 0) }}
+          {{ formatCurrency(group.total_loans || 0, currency) }}
         </p>
       </div>
 

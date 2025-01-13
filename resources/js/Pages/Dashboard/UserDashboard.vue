@@ -1,6 +1,6 @@
-<script setup>
-import {computed, onMounted, ref} from 'vue'
-import {Link, router} from '@inertiajs/vue3'
+<script setup lang="ts">
+import {computed} from 'vue'
+import {Link, router, usePage} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import {
   UsersIcon,
@@ -10,31 +10,24 @@ import {
 } from 'lucide-vue-next'
 import UserAnalyticCard from "@/Pages/Dashboard/Partials/UserAnalyticCard.vue";
 import GroupCard from "@/Pages/Dashboard/Partials/GroupCard.vue";
-import {Avatar, AvatarFallback, AvatarImage} from "@/Components/ui/avatar/index.js";
-import { useInitials } from "@/composables/useInitials.js";
+import UserAvatar from "@/Layouts/Partials/UserAvatar.vue";
+import {useInitials} from "@/composables/useInitials";
+import {formatCurrency} from "@/lib/formatters";
 
-const props = defineProps({
-  user: Object,
-  groups: Array,
-  analytics: Object,
-  canCreateGroup: Boolean
-})
+const props = defineProps<{
+  user: object
+  groups: Array<{}>
+  analytics: object
+}>()
 
-const defaultAvatar = '/default-avatar.png'
-const { initials, getInitials } = useInitials();
+const { getInitials } = useInitials()
+const currency: string = usePage().props.currency
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
-}
-
-const selectActiveGroup = (group) => {
-  router.post(route('dashboard.select-group', group.id), {}, {
+const setGroup = (group) => {
+  router.post(route('groups.set.active', group.uuid), {}, {
     preserveState: true,
     onSuccess: () => {
-      router.visit(route('groups.dashboard', group.id))
+      router.visit(route('groups.show', group.uuid), { replace: true })
     }
   })
 }
@@ -43,29 +36,17 @@ const selectActiveGroup = (group) => {
 const recentActivities = computed(() =>
   props.analytics.recent_activities || []
 )
-
-onMounted(() => {
-  getInitials(props.user.name)
-})
 </script>
 
 <template>
   <AppLayout>
-    <div class="container mx-auto px-4 py-8">
+    <div class="mx-auto sm:px-4 py-8">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- User Profile Summary -->
         <div class="md:col-span-1 bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <div class="flex items-center space-x-4">
-            <Avatar>
-              <AvatarImage
-                :src="user.avatar || defaultAvatar"
-                alt="User Avatar"
-                class="w-16 h-16 rounded-full object-cover"
-              />
-              <AvatarFallback>
-                {{ initials }}
-              </AvatarFallback>
-            </Avatar>
+          <div class="flex flex-row sm:flex-col lg:flex-row lg:items-center gap-4 lg:gap-0 lg:space-x-4 overflow-x-clip">
+            <UserAvatar :size="16" :fallback="getInitials(user.name)"/>
+
             <div>
               <h2 class="text-xl font-semibold">{{ user.name }}</h2>
               <p class="text-gray-500">{{ user.email }}</p>
@@ -78,19 +59,22 @@ onMounted(() => {
               :value="analytics.total_groups"
               :icon="UsersIcon"
             />
+
             <UserAnalyticCard
               title="Owned Groups"
               :value="analytics.owned_groups"
               :icon="ShieldCheckIcon"
             />
+
             <UserAnalyticCard
               title="Total Contributions"
-              :value="formatCurrency(analytics.total_contributions)"
+              :value="formatCurrency(analytics.total_contributions, currency)"
               :icon="WalletIcon"
             />
+
             <UserAnalyticCard
               title="Total Loans"
-              :value="formatCurrency(analytics.total_loans)"
+              :value="formatCurrency(analytics.total_loans, currency)"
               :icon="CreditCardIcon"
             />
           </div>
@@ -108,7 +92,7 @@ onMounted(() => {
               You are not a member of any groups yet.
               <Link
                 as="button"
-                v-if="canCreateGroup"
+                v-if="$page.props.auth.can.create_group"
                 :href="route('groups.create')"
                 class="ml-2 text-primary-600 hover:underline">
                 Create a Group
@@ -122,7 +106,7 @@ onMounted(() => {
                 v-for="group in groups"
                 :key="group.id"
                 :group="group"
-                @select="selectActiveGroup(group)"
+                @select="setGroup(group)"
               />
             </div>
           </div>

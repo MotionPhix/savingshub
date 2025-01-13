@@ -7,8 +7,11 @@ import {createApp, h} from 'vue';
 import {ZiggyVue} from '../../vendor/tightenco/ziggy';
 import VueApexCharts from "vue3-apexcharts";
 import { Modal, ModalLink, putConfig, renderApp } from '@inertiaui/modal-vue'
+import { createPinia } from 'pinia'
+import { variantJS } from '@variantjs/vue'
 
 const appName = import.meta.env.VITE_APP_NAME || 'SavingsHub';
+const pinia = createPinia()
 
 putConfig({
   type: 'modal',
@@ -18,7 +21,7 @@ putConfig({
     closeExplicitly: false,
     maxWidth: 'md',
     paddingClasses: 'p-4 sm:p-5',
-    panelClasses: 'bg-white rounded-lg shadow dark:bg-gray-800',
+    panelClasses: 'bg-white rounded-xl shadow dark:bg-gray-800',
     position: 'center',
   },
   slideover: {
@@ -26,10 +29,14 @@ putConfig({
     closeExplicitly: false,
     maxWidth: 'md',
     paddingClasses: 'p-4 sm:p-5',
-    panelClasses: 'bg-white rounded-lg shadow dark:bg-gray-800',
+    panelClasses: 'bg-white shadow dark:bg-gray-800',
     position: 'right',
   },
 })
+
+const configuration = {
+  //...
+}
 
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,
@@ -43,6 +50,8 @@ createInertiaApp({
       .use(plugin)
       .use(ZiggyVue)
       .use(VueApexCharts)
+      .use(pinia)
+      .use(variantJS, configuration)
       .component('GlobalModal', Modal)
       .component('ModalLink', ModalLink)
       .mount(el);

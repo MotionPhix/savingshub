@@ -1,0 +1,75 @@
+<?php
+namespace App\Services;
+
+use App\Models\Group;
+use App\Models\GroupActivity;
+use App\Models\User;
+use Illuminate\Support\Str;
+
+class GroupActivityService
+{
+  public function log(
+    Group $group,
+    string $type,
+    ?User $user = null,
+    ?array $changes = null,
+    ?array $metadata = null
+  ): GroupActivity {
+    return GroupActivity::create([
+      'uuid' => Str::uuid(),
+      'group_id' => $group->id,
+      'user_id' => $user?->id,
+      'type' => $type,
+      'description' => $this->generateDescription($type, $user, $metadata),
+      'changes' => $changes,
+      'metadata' => $metadata
+    ]);
+  }
+
+  private function generateDescription(
+    string $type,
+    ?User $user = null,
+    ?array $metadata = null
+  ): string {
+    $userName = $user ? $user->name : 'System';
+
+    return match($type) {
+      'member_joined' => "{$userName} joined the group",
+      'member_left' => "{$userName} left the group",
+      'member_invited' => "{$userName} was invited to the group",
+      'contribution_made' => "{$userName} made a contribution of " .
+        ($metadata['amount'] ?? 'N/A'),
+      'loan_requested' => "{$userName} requested a loan of " .
+        ($metadata['amount'] ?? 'N/A'),
+      'loan_approved' => "Loan for {$userName} was approved",
+      'loan_rejected' => "Loan for {$userName} was rejected",
+      'group_settings_updated' => "Group settings were updated",
+      'group_created' => "Group was created",
+      'group_archived' => "Group was archived",
+      default => "Activity occurred"
+    };
+  }
+
+  // Retrieve recent group activities
+  public function getRecentActivities(Group $group, int $limit = 10)
+  {
+    return $group->activities()
+      ->with(['user:id,name,avatar'])
+      ->latest()
+      ->limit($limit)
+      ->get()
+      ->map(function ($activity) {
+        return [
+          'id' => $activity->id,
+          'type' => $activity->type,
+          'description' => $activity->description,
+          'user' => [
+            'name' => $activity->user?->name,
+            'avatar' => $activity->user?->avatar
+          ],
+          'created_at' => $activity->created_at,
+          'metadata' => $activity->metadata
+        ];
+      });
+  }
+}

@@ -1,43 +1,8 @@
 <?php
 
-/*namespace App\Http\Middleware;
-
-use Closure;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Auth;
-
-class SetActiveGroup
-{
-  public function handle(Request $request, Closure $next)
-  {
-    // Check if user is authenticated
-    if (Auth::check()) {
-      // Get the active group from session or default to first group
-      $activeGroupId = session('active_group_id');
-
-      if ($activeGroupId) {
-        // Validate that the user is actually a member of this group
-        $group = Auth::user()->groups()->find($activeGroupId);
-
-        if ($group) {
-          // Share the active group with all views
-          view()->share('activeGroup', $group);
-          $request->merge(['active_group' => $group]);
-        } else {
-          // Reset active group if not a member
-          session()->forget('active_group_id');
-        }
-      }
-    }
-
-    return $next($request);
-  }
-}*/
-
-
 namespace App\Http\Middleware;
 
+use App\Services\GroupService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -51,9 +16,14 @@ class EnsureActiveGroup
     'groups.store',
     'groups.set.active',
     'groups.store',
-    'profile.edit',
+    'profile.index',
+    'profile.avatar.destroy',
     'profile.update'
   ];
+
+  public function __construct(
+    protected GroupService $groupService
+  ) {}
 
   public function handle(Request $request, Closure $next)
   {
@@ -69,7 +39,22 @@ class EnsureActiveGroup
 
       if (!$activeGroupId) {
         // Get user's groups
-        $userGroups = $request->user()->groups;
+        $userGroups = $request->user()
+          ->groups()
+          ->withCount('members')
+          ->withSum('contributions', 'amount')
+          ->get()
+          ->map(function ($group) {
+            return [
+              'id' => $group->id,
+              'uuid' => $group->uuid,
+              'name' => $group->name,
+              'mission_statement' => $group->mission_statement,
+              'slug' => $group->slug,
+              'members_count' => $group->members_count,
+              'contributions_sum' => $group->contributions_sum,
+            ];
+          });;
 
         // No groups exist
         if ($userGroups->isEmpty()) {
@@ -100,7 +85,7 @@ class EnsureActiveGroup
       ], 409);
     }
 
-    return Inertia::render('Groups/NoGroups', [
+    return Inertia::render('Groups/Create', [
       'can_create_group' => true,
       'message' => 'You do not have any groups. Create your first group to get started!'
     ]);
@@ -108,6 +93,15 @@ class EnsureActiveGroup
 
   protected function redirectToGroupSelection(Request $request, $userGroups)
   {
+    if (count($userGroups) === 1) {
+
+      $groupToActivate = \App\Models\Group::where('id', $userGroups[0]['id'])->first();
+
+      $this->groupService->activateGroup($request, $groupToActivate);
+
+      return redirect(route('groups.show', $groupToActivate->uuid));
+    }
+
     // Inertia or redirect based on request type
     if ($request->wantsJson()) {
       return response()->json([

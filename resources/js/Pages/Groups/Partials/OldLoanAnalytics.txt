@@ -1,0 +1,198 @@
+<script setup>
+import {computed} from 'vue'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from "@/Components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/Components/ui/table"
+import {Bar, Pie} from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  ArcElement
+} from 'chart.js'
+
+// Register ChartJS components
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  ArcElement
+)
+
+const props = defineProps({
+  loanInsights: {
+    type: Object,
+    default: () => ({})
+  }
+})
+
+const monthlyLoanTrendData = computed(() => {
+  const monthlyData = props.loanInsights.monthly_loan_trend || []
+
+  return {
+    labels: monthlyData.map(item => `${item.year}-${item.month}`),
+    datasets: [{
+      label: 'Monthly Loan Amount',
+      data: monthlyData.map(item => item.total_amount),
+      backgroundColor: 'rgba(54, 162, 235, 0.6)'
+    }]
+  }
+})
+
+const loanStatusData = computed(() => {
+  const statusBreakdown = props.loanInsights.loan_status_breakdown || []
+
+  return {
+    labels: statusBreakdown.map(item => item.status),
+    datasets: [{
+      label: 'Loan Status',
+      data: statusBreakdown.map(item => item.count),
+      backgroundColor: [
+        'rgba(255, 99, 132, 0.6)',
+        'rgba(54, 162, 235, 0.6)',
+        'rgba(255, 206, 86, 0.6)',
+        'rgba(75, 192, 192, 0.6)'
+      ]
+    }]
+  }
+})
+
+const topBorrowers = computed(() =>
+  props.loanInsights.top_borrowers || []
+)
+
+const loanInterestAnalysis = computed(() =>
+  props.loanInsights.loan_interest_analysis || {}
+)
+
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(amount || 0)
+}
+
+const barChartOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top',
+    },
+    title: {
+      display: true,
+      text: 'Monthly Loan Trend'
+    }
+  }
+}
+
+const pieChartOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top',
+    },
+    title: {
+      display: true,
+      text: 'Loan Status Distribution'
+    }
+  }
+}
+</script>
+
+<template>
+  <div class="grid md:grid-cols-2 gap-6">
+    <Card>
+      <CardHeader>
+        <CardTitle>Monthly Loan Trend</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Bar
+          :data="monthlyLoanTrendData"
+          :options="barChartOptions"
+        />
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>Loan Status Distribution</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Pie
+          :data="loanStatusData"
+          :options="pieChartOptions"
+        />
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>Top Borrowers</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Loan Count</TableHead>
+              <TableHead>Total Borrowed</TableHead>
+              <TableHead>Total Repaid</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="borrower in topBorrowers" :key="borrower.id">
+              <TableCell>{{ borrower.name }}</TableCell>
+              <TableCell>{{ borrower.loan_count }}</TableCell>
+              <TableCell>{{ formatCurrency(borrower.total_borrowed) }}</TableCell>
+              <TableCell>{{ formatCurrency(borrower.total_repaid) }}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>Loan Interest Analysis</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div class="space-y-4">
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Average Interest Rate</span>
+            <span>
+              {{
+                loanInterestAnalysis.average_interest_rate
+                  ? `${loanInterestAnalysis.average_interest_rate.toFixed(2)}%`
+                  : 'N/A'
+              }}
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Total Interest Earned</span>
+            <span>
+              {{ formatCurrency(loanInterestAnalysis.total_interest_earned) }}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+</template>

@@ -5,17 +5,35 @@ import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
 import InputError from "@/Components/InputError.vue";
 import {Textarea} from "@/Components/ui/textarea";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/Components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectLabel,
+  SelectValue,
+  SelectGroup, SelectSeparator
+} from "@/Components/ui/select";
 import {RadioGroup, RadioGroupItem} from "@/Components/ui/radio-group";
-import Checkbox from "@/Components/Checkbox.vue";
+import {Checkbox} from "@/Components/ui/checkbox";
 import {
   NumberField,
   NumberFieldContent,
   NumberFieldDecrement,
   NumberFieldIncrement,
   NumberFieldInput,
-} from '@/components/ui/number-field'
+} from '@/Components/ui/number-field'
 import {usePage} from "@inertiajs/vue3";
+
+type Option = {
+  value: string | number;
+  label: string;
+};
+
+type OptionGroup = {
+  label: string;
+  items: Array<Option>;
+};
 
 const props = withDefaults(defineProps<{
   label?: string
@@ -28,9 +46,10 @@ const props = withDefaults(defineProps<{
   hint?: string
   icon?: Component
   variant?: 'default' | 'outlined' | 'underlined'
-  options?: { value: string | number, label: string }[]  // For select input
+  options?: Array<Option> | Array<OptionGroup>  // For select input
   prefix?: string | Component
   suffix?: string | Component
+  hasGroups?: boolean
   containerClass?: string
   orientation?: string
   autocomplete?: string
@@ -43,6 +62,7 @@ const props = withDefaults(defineProps<{
   disabled: false,
   variant: 'default',
   orientation: 'vertical',
+  hasGroups: false,
   min: 0,
   max: 100
 })
@@ -102,17 +122,38 @@ const containerClasses = computed(() => props.containerClass || 'mb-4')
             v-model="model"
             :required="required"
             :disabled="disabled">
-            <SelectTrigger class="!min-h-10">
+            <SelectTrigger class="!min-h-10 dark:bg-primary-foreground">
               <SelectValue :placeholder="placeholder" />
             </SelectTrigger>
 
             <SelectContent>
-              <SelectItem
-                v-for="option in options"
-                :key="option.value"
-                :value="option.value">
-                {{ option.label }}
-              </SelectItem>
+              <template v-if="hasGroups">
+                <SelectGroup
+                  v-for="(group, idx) in options as OptionGroup[]"
+                  :key="group.label">
+
+                  <SelectSeparator v-if="idx !== 0" class="dark:bg-amber-200 bg-gray-300" />
+
+                  <SelectLabel>{{ group.label }}</SelectLabel>
+
+                  <SelectItem
+                    v-for="item in group.items"
+                    :key="item.value"
+                    :value="item.value">
+                    {{ item.label }}
+                  </SelectItem>
+
+                </SelectGroup>
+              </template>
+
+              <template v-else>
+                <SelectItem
+                  v-for="item in options as Option[]"
+                  :key="item.value"
+                  :value="item.value">
+                  {{ item.label }}
+                </SelectItem>
+              </template>
             </SelectContent>
           </Select>
         </template>
@@ -120,7 +161,7 @@ const containerClasses = computed(() => props.containerClass || 'mb-4')
         <template v-else-if="type === 'textarea'">
           <Textarea
             :id="id"
-            class="overflow-hidden min-h-9 h-16"
+            class="overflow-hidden min-h-9 h-16 dark:bg-primary-foreground"
             @input="(e) => {
               const target = e.target as HTMLTextAreaElement;
               target.style.height = '0px';
@@ -153,7 +194,7 @@ const containerClasses = computed(() => props.containerClass || 'mb-4')
             <Checkbox
               :checked="model"
               class="h-5 w-5"
-              @update:checked="model != model"
+              @update:checked="model = !model"
               :id="id"
             />
 
@@ -176,7 +217,7 @@ const containerClasses = computed(() => props.containerClass || 'mb-4')
             }">
             <NumberFieldContent>
               <NumberFieldDecrement />
-              <NumberFieldInput />
+              <NumberFieldInput class="dark:bg-primary-foreground" />
               <NumberFieldIncrement />
             </NumberFieldContent>
           </NumberField>
@@ -191,6 +232,7 @@ const containerClasses = computed(() => props.containerClass || 'mb-4')
             :required="required"
             :disabled="disabled"
             :autocomplete="autocomplete"
+            class="dark:bg-primary-foreground"
             :min="min"
             :max="max"
             :step="step"

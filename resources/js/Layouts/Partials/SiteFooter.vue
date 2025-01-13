@@ -11,14 +11,14 @@ const footerLinks = [
 </script>
 
 <template>
-  <footer class="border-t pt-5">
-    <div class="flex flex-col items-center justify-between lg:flex-row lg:px-6">
+  <footer>
+    <div class="flex flex-col items-center gap-2 justify-between lg:flex-row lg:px-6">
 
       <div class="flex flex-col items-center md:flex-row lg:gap-8 gap-4">
         <Link href="/" class="flex items-center space-x-2">
-          <ApplicationLogo class="h-6 w-6 fill-current" />
-          <span class="font-bold text-lg">
-            SavingsHub
+          <ApplicationLogo class="h-5 w-5 fill-current" />
+          <span class="font-bold text-lg font-serif">
+            {{ $page.props.appName }}
           </span>
         </Link>
 
@@ -34,7 +34,7 @@ const footerLinks = [
       </div>
 
       <p class="text-center text-xs text-muted-foreground">
-        © {{ new Date().getFullYear() }} SavingsHub. All rights reserved.
+        © {{ `${new Date().getFullYear()} ${$page.props.appName}` }}. All rights reserved.
       </p>
 
     </div>

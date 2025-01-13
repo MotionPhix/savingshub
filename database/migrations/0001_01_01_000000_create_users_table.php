@@ -28,7 +28,6 @@ return new class extends Migration {
 
       // Additional profile information
       $table->string('phone_number')->nullable();
-      $table->string('avatar')->nullable();
       $table->text('bio')->nullable();
       $table->string('timezone')->default('UTC');
       $table->string('locale')->default('en');

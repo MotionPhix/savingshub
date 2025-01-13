@@ -71,7 +71,11 @@ const submitForm = () => {
       router.visit(route('groups.dashboard', response.group.id))
     },
     onError: (errors) => {
-      console.log(errors.message)
+
+      Object.entries(errors).forEach(([field, error]) => {
+        toast.error(`${field.charAt(0).toUpperCase() + field.slice(1)}: ${error}`)
+      })
+
       // Handle validation errors
       if (errors.start_date) {
         toast.error('Start date needs fixing', {

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { format, isWithinInterval, isPast, isFuture } from 'date-fns'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@/Components/ui/badge/index.js'
 
 const props = defineProps({
   contributions: {

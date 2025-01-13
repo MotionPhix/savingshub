@@ -43,7 +43,7 @@ class DashboardController extends Controller
       'members' => function ($query) {
         $query->where('user_id', Auth::id());
       }
-    ])->get();
+    ])->withCount('members')->get();
 
     // Basic user analytics
     $userAnalytics = $this->getUserAnalytics($user, $groups);

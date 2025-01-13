@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.js';
 import { useId } from 'radix-vue';
 import { provide } from 'vue';
 import { FORM_ITEM_INJECTION_KEY } from './injectionKeys';

@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.js';
 import { ChevronUpIcon } from '@radix-icons/vue';
 import { SelectScrollUpButton, useForwardProps } from 'radix-vue';
 import { computed } from 'vue';

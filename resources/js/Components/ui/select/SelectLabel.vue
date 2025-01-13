@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.js';
 import { SelectLabel } from 'radix-vue';
 
 const props = defineProps({

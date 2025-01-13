@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.js';
 import { computed } from 'vue';
 import TableCell from './TableCell.vue';
 import TableRow from './TableRow.vue';

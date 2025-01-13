@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils.js';
 import { Label } from 'radix-vue';
 import { computed } from 'vue';
 

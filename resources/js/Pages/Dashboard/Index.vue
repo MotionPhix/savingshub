@@ -31,6 +31,7 @@ defineProps<{
             <CardTitle>Total Savings</CardTitle>
             <DollarSignIcon/>
           </CardHeader>
+
           <CardContent>
             <AnimatedNumber :number="totalSavings" prefix="$"/>
           </CardContent>
@@ -41,6 +42,7 @@ defineProps<{
             <CardTitle>Active Groups</CardTitle>
             <UsersIcon/>
           </CardHeader>
+
           <CardContent>
             <AnimatedNumber :number="activeGroups"/>
           </CardContent>
@@ -63,6 +65,7 @@ defineProps<{
           <CardHeader>
             <CardTitle>Savings Progress</CardTitle>
           </CardHeader>
+
           <CardContent>
             <ProgressChart :data="savingsProgressData"/>
           </CardContent>
@@ -72,6 +75,7 @@ defineProps<{
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
+
           <CardContent>
             <ActivityTimeline :activities="recentActivities"/>
           </CardContent>
