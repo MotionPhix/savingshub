@@ -11,6 +11,7 @@ import {
   DollarSignIcon,
   ClockIcon
 } from "lucide-vue-next"
+import {formatCurrency} from "@/lib/formatters";
 
 const props = defineProps({
   activities: {
@@ -30,13 +31,6 @@ const formattedActivities = computed(() => {
         : ClockIcon
   })).slice(0, 10) // Limit to 10 most recent activities
 })
-
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount || 0)
-}
 </script>
 
 <template>

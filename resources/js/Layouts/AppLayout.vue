@@ -1,67 +1,3 @@
-<script setup>
-import {Toaster} from 'vue-sonner'
-import SiteHeader from "@/Layouts/Partials/SiteHeader.vue";
-import Sidebar from "@/Layouts/Partials/Sidebar.vue";
-import SiteFooter from "@/Layouts/Partials/SiteFooter.vue";
-import {onMounted, onUnmounted, ref, watch} from "vue";
-import {MenuIcon} from "lucide-vue-next";
-import {usePage} from "@inertiajs/vue3";
-import {toast} from 'vue3-toastify';
-import 'vue3-toastify/dist/index.css';
-import {Button} from "@/Components/ui/button/index.js";
-
-const isMobile = ref(window.innerWidth < 1024)
-const isSidebarOpen = ref(false)
-
-const checkScreenSize = () => {
-  isMobile.value = window.innerWidth < 1024
-
-  // Automatically close sidebar on mobile
-  if (isMobile.value) {
-    isSidebarOpen.value = false
-  }
-}
-
-const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value
-}
-
-onMounted(() => {
-  window.addEventListener('resize', checkScreenSize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkScreenSize)
-})
-
-// Watch for error messages in Inertia props
-watch(
-  () => usePage().props.errors,
-  (errors) => {
-    // Handle generic error message
-    if (errors.message) {
-      toast.error(errors.message, {
-        autoClose: 5000,
-      });
-
-      /*toast.error('Check your action', {
-        description: errors.message,
-        duration: 5000,
-      })*/
-    }
-
-    // Optionally handle specific error types
-    if (errors.authorization) {
-      toast.warning('Access Denied', {
-        description: errors.authorization,
-        duration: 5000,
-      })
-    }
-  },
-  {immediate: true}
-)
-</script>
-
 <template>
   <Toaster position="bottom-left" class="z-50" :expand="true" richColors/>
 
@@ -93,14 +29,42 @@ watch(
       />
 
       <!-- Mobile Sidebar (Overlay) -->
-      <div
-        v-if="isMobile && isSidebarOpen"
-        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-        @click="isSidebarOpen = false">
-        <Sidebar
-          class="w-64 mt-14 max-w-[80%] h-full bg-white dark:bg-gray-900 shadow-lg transform translate-x-0 transition-transform duration-300"
+      <!-- Backdrop -->
+      <Transition
+        enter-active-class="transition-opacity duration-300"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition-opacity duration-300"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="isMobile && isSidebarOpen"
+          class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          @click="closeSidebar"
         />
-      </div>
+      </Transition>
+
+      <!-- Sidebar -->
+      <Transition
+        enter-active-class="transition-transform duration-300 ease-out"
+        enter-from-class="translate-x-[-100%]"
+        enter-to-class="translate-x-0"
+        leave-active-class="transition-transform duration-300 ease-in"
+        leave-from-class="translate-x-0"
+        leave-to-class="translate-x-[-100%]"
+      >
+        <div
+          v-if="isMobile && isSidebarOpen"
+          class="absolute top-16 bottom-0 left-0 w-64 max-w-[80%]
+               bg-white dark:bg-gray-900
+               shadow-lg
+               transform"
+          @click.stop
+        >
+          <Sidebar />
+        </div>
+      </Transition>
 
       <!-- Main Content Area -->
       <main
@@ -126,3 +90,80 @@ watch(
     </div>
   </div>
 </template>
+
+<script setup>
+import {onMounted, onUnmounted, ref, watch} from "vue";
+import {usePage} from "@inertiajs/vue3";
+import {toast} from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+import {Toaster} from 'vue-sonner'
+import SiteHeader from "@/Layouts/Partials/SiteHeader.vue";
+import Sidebar from "@/Layouts/Partials/Sidebar.vue";
+import SiteFooter from "@/Layouts/Partials/SiteFooter.vue";
+import {Button} from "@/Components/ui/button/index.js";
+
+const isMobile = ref(window.innerWidth < 1024)
+const isSidebarOpen = ref(false)
+
+const checkScreenSize = () => {
+  const prevIsMobile = isMobile.value
+  isMobile.value = window.innerWidth < 1024
+
+  // Automatically close sidebar when switching to mobile
+  if (!prevIsMobile && isMobile.value) {
+    isSidebarOpen.value = false
+  }
+}
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value
+}
+
+const closeSidebar = () => {
+  isSidebarOpen.value = false
+}
+
+// Handle escape key to close sidebar
+const handleEscapeKey = (e) => {
+  if (isMobile && isSidebarOpen.value && e.key === 'Escape') {
+    closeSidebar()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', checkScreenSize)
+  window.addEventListener('keydown', handleEscapeKey)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize)
+  window.removeEventListener('keydown', handleEscapeKey)
+})
+
+// Watch for error messages in Inertia props
+watch(
+  () => usePage().props.errors,
+  (errors) => {
+    if (errors.message) {
+      toast.error(errors.message, {
+        autoClose: 5000,
+      });
+    }
+
+    if (errors.authorization) {
+      toast.warning('Access Denied', {
+        description: errors.authorization,
+        duration: 5000,
+      })
+    }
+  },
+  {immediate: true}
+)
+</script>
+
+<style>
+/* Prevent body scrolling when sidebar is open */
+body.sidebar-open {
+  overflow: hidden;
+}
+</style>

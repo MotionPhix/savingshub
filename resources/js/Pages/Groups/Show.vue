@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, computed} from 'vue'
+import {ref, computed, onUnmounted} from 'vue'
 import {Head, router, usePage} from '@inertiajs/vue3'
 import AppLayout from "@/Layouts/AppLayout.vue"
 import { Card, CardContent } from "@/Components/ui/card"
@@ -13,6 +13,7 @@ import LoanAnalytics from "./Partials/LoanAnalytics.vue"
 import GroupOverview from "@/Pages/Groups/Partials/GroupOverview.vue";
 import {Separator} from "@/Components/ui/separator";
 import {formatCurrency} from "@/lib/formatters";
+import {useTabPersistence} from "@/composables/useTabPersistence";
 
 // Props definition
 const props = withDefaults(
@@ -55,7 +56,6 @@ const props = withDefaults(
 )
 
 // Active tab management
-const activeTab = ref('overview')
 const currency = usePage().props.currency
 
 // Computed properties for quick access
@@ -74,6 +74,18 @@ const inviteMembers = () => {
   // Open invite members modal or navigate to invite page
   router.visit(route('groups.invite', props.group.uuid))
 }
+
+// Use tab persistence composable
+const {
+  activeTab,
+  handleTabChange,
+  clearTabPersistence
+} = useTabPersistence('overview', `group_tab_${props.group.uuid}`)
+
+// Cleanup on component unmount
+onUnmounted(() => {
+  clearTabPersistence()
+})
 </script>
 
 <template>
@@ -192,7 +204,9 @@ const inviteMembers = () => {
       </div>
 
       <!-- Tabs Navigation -->
-      <Tabs v-model="activeTab" class="w-full">
+      <Tabs
+        v-model="activeTab" class="w-full"
+        @update:modelValue="handleTabChange">
         <TabsList class="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>

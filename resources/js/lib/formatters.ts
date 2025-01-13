@@ -1,7 +1,11 @@
+import {usePage} from "@inertiajs/vue3";
+
 export const formatCurrency = (amount: number, currency: string = 'MWK'): string => {
+  const globalCurrency = <string>usePage().props.currency
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency,
+    currency: globalCurrency ?? currency,
   }).format(amount || 0)
 }
 
