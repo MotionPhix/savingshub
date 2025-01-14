@@ -37,6 +37,10 @@ const form = useForm({
   settings: {},
 })
 
+const interestTiers = ref([
+  { min_amount: 0, max_amount: 10000, rate: 5 }
+])
+
 function getWeekFromToday() {
   const today = new Date();
   const weekFromToday = new Date(today.setDate(today.getDate() + 7));
@@ -131,14 +135,57 @@ const submitForm = () => {
   }
 }
 
+// Update the addInterestTier function
+const addInterestTier = () => {
+  const lastTier = interestTiers.value[interestTiers.value.length - 1]
+
+  interestTiers.value.push({
+    min_amount: lastTier.max_amount + 1,
+    max_amount: lastTier.max_amount * 2,
+    rate: lastTier.rate + 1
+  })
+}
+
+// Update the removeInterestTier function
+const removeInterestTier = (index) => {
+  if (interestTiers.value.length > 1) {
+    interestTiers.value.splice(index, 1)
+  }
+}
+
+// Watch for changes in loan interest type
+watch(() => form.loan_interest_type, (newType) => {
+  if (newType === 'tiered') {
+    // Ensure interest tiers are populated when switching to tiered
+    if (interestTiers.value.length === 0) {
+      interestTiers.value = [
+        { min_amount: 0, max_amount: 10000, rate: 5 }
+      ]
+    }
+    // Update form with current tiers
+    form.interest_tiers = interestTiers.value
+  } else {
+    // Clear tiers for non-tiered types
+    interestTiers.value = []
+    form.interest_tiers = []
+  }
+})
+
+// Watch for changes in interest tiers
+watch(interestTiers, (newTiers) => {
+  if (form.loan_interest_type === 'tiered') {
+    form.interest_tiers = newTiers
+  }
+}, { deep: true })
+
 watch(() => form.start_date, calculateEndDate);
 watch(() => form.duration_months, calculateEndDate);
 </script>
 
 <template>
   <AppLayout>
-    <div class="container mx-auto px-4 py-8">
-      <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8">
+    <div class="mx-auto sm:px-4 py-8">
+      <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 shadow rounded-lg p-8">
         <h1 class="text-2xl font-bold mb-6 text-center">
           Create a New Group
         </h1>
@@ -329,6 +376,63 @@ watch(() => form.duration_months, calculateEndDate);
                 placeholder="Loan Duration"
                 :min="1"
               />
+            </div>
+          </div>
+
+          <div
+            v-if="form.loan_interest_type === 'tiered'" class="mt-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-lg font-semibold">Interest Tiers</h2>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                @click="addInterestTier">
+                Add Tier
+              </Button>
+            </div>
+
+            <div class="space-y-4">
+              <div
+                v-for="(tier, index) in interestTiers"
+                :key="index"
+                class="grid grid-cols-1 gap-4 items-center">
+                <div>
+                  <FormField
+                    type="number"
+                    label="Min Amount"
+                    v-model.number="tier.min_amount"
+                    placeholder="Minimum"
+                    :min="0"
+                  />
+                </div>
+
+                <div>
+                  <FormField
+                    type="number"
+                    label="Max Amount"
+                    v-model.number="tier.max_amount"
+                    placeholder="Maximum"
+                    :min="tier.min_amount"
+                  />
+                </div>
+
+                <div>
+                  <FormField
+                    type="number"
+                    label="Interest Rate (%)"
+                    v-model.number="tier.rate"
+                    placeholder="Rate"
+                    :step="0.01"
+                    :min="0"
+                    :max="100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div v-if="form.errors.interest_tiers" class="text-red-500 text-sm mt-2">
+              {{ form.errors.interest_tiers }}
             </div>
           </div>
 
