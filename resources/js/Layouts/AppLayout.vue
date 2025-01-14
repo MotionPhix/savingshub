@@ -1,5 +1,92 @@
+<script setup>
+import {onMounted, onUnmounted, ref, watch} from "vue";
+import {usePage} from "@inertiajs/vue3";
+import 'vue3-toastify/dist/index.css';
+import {toast, Toaster} from 'vue-sonner'
+import SiteHeader from "@/Layouts/Partials/SiteHeader.vue";
+import Sidebar from "@/Layouts/Partials/Sidebar.vue";
+import SiteFooter from "@/Layouts/Partials/SiteFooter.vue";
+import {Button} from "@/Components/ui/button/index.js";
+
+const isMobile = ref(window.innerWidth < 1024)
+const isSidebarOpen = ref(false)
+
+const checkScreenSize = () => {
+  const prevIsMobile = isMobile.value
+  isMobile.value = window.innerWidth < 1024
+
+  // Automatically close sidebar when switching to mobile
+  if (!prevIsMobile && isMobile.value) {
+    isSidebarOpen.value = false
+  }
+}
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value
+}
+
+const closeSidebar = () => {
+  isSidebarOpen.value = false
+}
+
+// Handle escape key to close sidebar
+const handleEscapeKey = (e) => {
+  if (isMobile && isSidebarOpen.value && e.key === 'Escape') {
+    closeSidebar()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', checkScreenSize)
+  window.addEventListener('keydown', handleEscapeKey)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize)
+  window.removeEventListener('keydown', handleEscapeKey)
+})
+
+// Watch for error messages in Inertia props
+watch(
+  () => usePage().props.errors,
+  (errors) => {
+    if (errors.message) {
+      toast.error(errors.message, {
+        duration: 5000,
+      });
+    }
+
+    if (errors.authorization) {
+      toast.warning('Access Denied', {
+        description: errors.authorization,
+        duration: 5000,
+      })
+    }
+  },
+  {immediate: true}
+)
+
+// Watch for error messages in Inertia props
+watch(
+  () => usePage().props.flush,
+  (newFlush) => {
+
+    if (newFlush !== null || newFlush !== 'null') {
+      toast.warning(newFlush, {
+        autoClose: 5000,
+      });
+    }
+
+    usePage().props.flush = null
+  },
+  {immediate: true}
+)
+</script>
+
 <template>
-  <Toaster position="bottom-left" class="z-50" :expand="true" richColors/>
+  <Toaster
+    position="bottom-left"
+    :expand="true" richColors/>
 
   <div class="h-screen bg-gray-50 dark:bg-gray-900 w-screen overflow-hidden">
     <SiteHeader>
@@ -90,76 +177,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import {onMounted, onUnmounted, ref, watch} from "vue";
-import {usePage} from "@inertiajs/vue3";
-import {toast} from 'vue3-toastify';
-import 'vue3-toastify/dist/index.css';
-import {Toaster} from 'vue-sonner'
-import SiteHeader from "@/Layouts/Partials/SiteHeader.vue";
-import Sidebar from "@/Layouts/Partials/Sidebar.vue";
-import SiteFooter from "@/Layouts/Partials/SiteFooter.vue";
-import {Button} from "@/Components/ui/button/index.js";
-
-const isMobile = ref(window.innerWidth < 1024)
-const isSidebarOpen = ref(false)
-
-const checkScreenSize = () => {
-  const prevIsMobile = isMobile.value
-  isMobile.value = window.innerWidth < 1024
-
-  // Automatically close sidebar when switching to mobile
-  if (!prevIsMobile && isMobile.value) {
-    isSidebarOpen.value = false
-  }
-}
-
-const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value
-}
-
-const closeSidebar = () => {
-  isSidebarOpen.value = false
-}
-
-// Handle escape key to close sidebar
-const handleEscapeKey = (e) => {
-  if (isMobile && isSidebarOpen.value && e.key === 'Escape') {
-    closeSidebar()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('resize', checkScreenSize)
-  window.addEventListener('keydown', handleEscapeKey)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkScreenSize)
-  window.removeEventListener('keydown', handleEscapeKey)
-})
-
-// Watch for error messages in Inertia props
-watch(
-  () => usePage().props.errors,
-  (errors) => {
-    if (errors.message) {
-      toast.error(errors.message, {
-        autoClose: 5000,
-      });
-    }
-
-    if (errors.authorization) {
-      toast.warning('Access Denied', {
-        description: errors.authorization,
-        duration: 5000,
-      })
-    }
-  },
-  {immediate: true}
-)
-</script>
 
 <style>
 /* Prevent body scrolling when sidebar is open */

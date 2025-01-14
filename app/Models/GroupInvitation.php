@@ -71,4 +71,30 @@ class GroupInvitation extends Model
         $this
       ));
   }
+
+  // Check if invitation is expiring soon
+  public function isExpiringSoon(): bool
+  {
+    $expirationThreshold = now()->addDays(2);
+    return !$this->accepted_at &&
+      $this->expires_at->lessThanOrEqualTo($expirationThreshold);
+  }
+
+  // Send expiration warning
+  public function sendExpirationWarning()
+  {
+    if ($this->isExpiringSoon()) {
+      Notification::route('mail', $this->email)
+        ->notify(new InvitationExpirationWarning($this));
+    }
+  }
+
+  // Extend invitation
+  public function extend(int $days = 7)
+  {
+    $this->expires_at = now()->addDays($days);
+    $this->save();
+
+    return $this;
+  }
 }

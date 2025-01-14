@@ -15,11 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
       \App\Http\Middleware\HandleInertiaRequests::class,
       \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
       \App\Http\Middleware\EnsureActiveGroup::class,
+      \App\Http\Middleware\HandlePendingInvitation::class,
       \Inertia\EncryptHistoryMiddleware::class,
     ]);
 
     $middleware->alias([
-      'active.group' => \App\Http\Middleware\EnsureActiveGroup::class
+      'active.group' => \App\Http\Middleware\EnsureActiveGroup::class,
+      'pending.invitation' => \App\Http\Middleware\HandlePendingInvitation::class
     ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {

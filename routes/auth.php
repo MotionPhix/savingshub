@@ -245,7 +245,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Group Invitation Routes
     Route::get(
       '/invitations/{token}/accept',
-      [GroupInvitationController::class, 'accept']
+      [GroupInvitationController::class, 'handleInvitationLink']
     )->name('invite.accept')
       ->middleware('signed');
 

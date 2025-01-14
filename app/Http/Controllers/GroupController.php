@@ -410,17 +410,11 @@ class GroupController extends Controller implements HasMiddleware
     try {
       $responses = $this->groupService->inviteMembers(
         $request->input('emails'),
+        $request->input('role', 'member'),
         $request->message
       );
 
-      // Return with appropriate message
-      if (count($responses['failed']) > 0) {
-        return back()->with('warning', 'Some invitations could not be sent.')
-          ->with('invitationResponse', $responses);
-      }
-
-      return back()->with('success', 'Invitations sent successfully!')
-        ->with('invitationResponse', $responses);
+      return back()->with('invitationResponse', $responses);
     } catch (\Exception $e) {
       return back()->withErrors(['message' => $e->getMessage()]);
     }

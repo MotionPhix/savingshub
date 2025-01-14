@@ -38,7 +38,7 @@ class GroupInvitationNotification extends Notification
 
     // Add custom message if provided
     if ($this->customMessage) {
-      $mailMessage->line("Personal Message: {$this->customMessage}");
+      $mailMessage->line("{$this->customMessage}");
     }
 
     $mailMessage->action(

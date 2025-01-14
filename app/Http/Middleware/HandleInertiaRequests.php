@@ -44,6 +44,8 @@ class HandleInertiaRequests extends Middleware
           ->first()->settings['currency'] ?? 'MWK'
         : 'ZAR',
 
+      'flush' => session('flush'),
+
     ];
   }
 }

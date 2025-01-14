@@ -83,7 +83,7 @@ class GroupService
 
   public function inviteMembers(array $emails, string $role = 'member', string $message = null)
   {
-    $group = Group::findOrFail(session('active_group_id'));
+    $group = Group::where('id', session('active_group_id'))->firstOrFail();
 
     $invitations = [];
     $existingEmails = [];

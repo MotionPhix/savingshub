@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,6 +33,14 @@ class AuthenticatedSessionController extends Controller
     $request->authenticate();
 
     $request->session()->regenerate();
+
+    // Check for pending invitation token
+    $invitationToken = $request->input('invitation_token');
+
+    if ($invitationToken) {
+      // Store the token in the session for post-login handling
+      Session::put('pending_invitation_token', $invitationToken);
+    }
 
     return redirect()->intended(route('dashboard', absolute: false));
   }
