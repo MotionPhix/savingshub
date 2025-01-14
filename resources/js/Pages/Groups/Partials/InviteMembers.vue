@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import {ref, computed} from 'vue'
 import {router} from '@inertiajs/vue3'
 import {toast} from 'vue-sonner'
@@ -19,15 +19,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle
-} from "@/Components/ui/card/index.js";
+} from "@/Components/ui/card";
 import FormField from "@/Components/Forms/FormField.vue";
 
-const props = defineProps({
+const props = defineProps<{
   group: {
-    type: Object,
-    required: true
+    name: string
+    id: number
+    uuid: string
   }
-})
+}>()
 
 const emailInput = ref('')
 const invitationMessage = ref('')
@@ -66,8 +67,29 @@ const sendInvitations = () => {
     message: invitationMessage.value
   }, {
     preserveScroll: true,
-    onSuccess: () => {
-      toast.success(`Invitations sent to ${emails.length} email(s)`)
+    onSuccess: (page) => {
+      // Handle different response scenarios
+      const response = page.props.invitation_response
+
+      // Success notifications
+      if (response.success.length > 0) {
+        toast.success(`Invitations sent to ${response.success.length} ${usePluralize()}`)
+      }
+
+      // Existing member notifications
+      if (response.existing.length > 0) {
+        toast.warning(`${response.existing.length} email(s) are already group members`)
+      }
+
+      // Duplicate invitation notifications
+      if (response.duplicate.length > 0) {
+        toast.info(`${response.duplicate.length} email(s) already have pending invitations`)
+      }
+
+      // Failed invitation notifications
+      if (response.failed.length > 0) {
+        toast.error(`Failed to send invitations to ${response.failed.length} email(s)`)
+      }
     },
     onError: (errors) => {
       Object.values(errors).forEach(error => {

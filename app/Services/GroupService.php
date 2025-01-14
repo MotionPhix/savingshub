@@ -81,40 +81,46 @@ class GroupService
     return $group;
   }
 
-  public function inviteMembers(array $emails, string $message = null)
+  public function inviteMembers(array $emails, string $role = 'member', string $message = null)
   {
+    $group = Group::findOrFail(session('active_group_id'));
+
     $invitations = [];
     $existingEmails = [];
     $failedEmails = [];
-
-    $group = Group::where('id',  session('active_group_id'))->first();
+    $duplicateEmails = [];
 
     foreach ($emails as $email) {
       try {
-        // Check if user already exists
+        // Check for existing active invitation
+        $existingInvitation = GroupInvitation::where('group_id', $group->id)
+          ->where('email', $email)
+          ->where('accepted_at', null)
+          ->where('expires_at', '>', now())
+          ->first();
+
+        if ($existingInvitation) {
+          $duplicateEmails[] = $email;
+          continue;
+        }
+
+        // Check if user already exists and is a member
         $existingUser = User::where('email', $email)->first();
 
-        if ($existingUser) {
-          // If user exists, check if already a member
-          $isMember = $group->members()->where('user_id', $existingUser->id)->exists();
-
-          if ($isMember) {
-            $existingEmails[] = $email;
-            continue;
-          }
+        if ($existingUser && $group->members()->where('user_id', $existingUser->id)->exists()) {
+          $existingEmails[] = $email;
+          continue;
         }
 
         // Create invitation
         $invitation = GroupInvitation::create([
           'group_id' => session('active_group_id'),
           'email' => $email,
-          'role' => $validated['role'] ?? 'member',
+          'role' => $role,
           'token' => Str::random(60),
           'expires_at' => now()->addDays(7),
           'invited_by' => auth()->id()
         ]);
-
-        $invitations[] = $invitation;
 
         // Send invitation notification
         Notification::route('mail', $email)
@@ -124,6 +130,19 @@ class GroupService
             $message
           ));
 
+        $invitations[] = $invitation;
+
+        // Log the invitation activity
+        activity()
+          ->performedOn($group)
+          ->causedBy(auth()->user())
+          ->withProperties([
+            'email' => $email,
+            'role' => $role,
+            'invitation_id' => $invitation->id
+          ])
+          ->log('group_member_invited');
+
       } catch (\Exception $e) {
         // Log the error and track failed emails
         Log::error('Group invitation failed', [
@@ -131,47 +150,18 @@ class GroupService
           'group_id' => $group->id,
           'error' => $e->getMessage()
         ]);
+
         $failedEmails[] = $email;
       }
     }
 
     // Prepare response
     return [
-      'success' => count($invitations),
+      'success' => $invitations,
       'existing' => $existingEmails,
+      'duplicate' => $duplicateEmails,
       'failed' => $failedEmails
     ];
-
-    /*return DB::transaction(function () use ($group, $emails) {
-      $invitations = [];
-
-      foreach ($emails as $email) {
-        // Find or create user
-        $user = User::firstOrCreate(
-          ['email' => $email],
-          [
-            'name' => explode('@', $email)[0],
-            'password' => bcrypt('password'), // Temporary password
-            'email_verified_at' => null
-          ]
-        );
-
-        // Create group invitation
-        $invitation = $group->members()->create([
-          'user_id' => $user->id,
-          'status' => 'invited',
-          'invited_by' => auth()->id(),
-          'invited_at' => now()
-        ]);
-
-        $invitations[] = $invitation;
-
-        // Send invitation notification
-        Notification::send($user, new GroupInvitationNotification($group, $invitation));
-      }
-
-      return $response;
-    });*/
   }
 
   public function acceptGroupInvitation(User $user, Group $group)

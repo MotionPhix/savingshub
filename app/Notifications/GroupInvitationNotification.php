@@ -33,8 +33,8 @@ class GroupInvitationNotification extends Notification
     $mailMessage = (new MailMessage)
       ->subject("You've been invited to join {$this->group->name}")
       ->greeting("Hello!")
-      ->line("You have been invited to join the group: {$this->group->name}")
-      ->line("Invitation Role: " . ucfirst($this->invitation->role));
+      ->line("You have been invited to join the {$this->group->name} group.")
+      ->line("Your role will be: " . ucfirst($this->invitation->role));
 
     // Add custom message if provided
     if ($this->customMessage) {
