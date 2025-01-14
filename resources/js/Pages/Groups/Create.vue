@@ -27,7 +27,7 @@ const form = useForm({
   status: 'active',
   is_public: false,
   allow_member_invites: true,
-  loan_interest_type: 'fixed',
+  loan_interest_type: 'tiered',
   base_interest_rate: 5 / 100,
   interest_tiers: [],
   max_loan_amount: null,
@@ -38,7 +38,7 @@ const form = useForm({
 })
 
 const interestTiers = ref([
-  { min_amount: 0, max_amount: 10000, rate: 5 }
+  { min_amount: 0, max_amount: 10000, rate: 0.05 }
 ])
 
 function getWeekFromToday() {
@@ -396,8 +396,8 @@ watch(() => form.duration_months, calculateEndDate);
               <div
                 v-for="(tier, index) in interestTiers"
                 :key="index"
-                class="grid grid-cols-1 gap-4 items-center">
-                <div>
+                class="grid grid-cols-1 sm:grid-cols-5 gap-4 items-center">
+                <div class="sm:col-span-2">
                   <FormField
                     type="number"
                     label="Min Amount"
@@ -407,7 +407,7 @@ watch(() => form.duration_months, calculateEndDate);
                   />
                 </div>
 
-                <div>
+                <div class="sm:col-span-2">
                   <FormField
                     type="number"
                     label="Max Amount"
@@ -423,6 +423,7 @@ watch(() => form.duration_months, calculateEndDate);
                     label="Interest Rate (%)"
                     v-model.number="tier.rate"
                     placeholder="Rate"
+                    format="percent"
                     :step="0.01"
                     :min="0"
                     :max="100"
