@@ -115,7 +115,6 @@ watch(
         class="w-64 shrink-0 border-r border-gray-200 dark:border-gray-800"
       />
 
-      <!-- Mobile Sidebar (Overlay) -->
       <!-- Backdrop -->
       <Transition
         enter-active-class="transition-opacity duration-300"
@@ -123,8 +122,7 @@ watch(
         enter-to-class="opacity-100"
         leave-active-class="transition-opacity duration-300"
         leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
+        leave-to-class="opacity-0">
         <div
           v-if="isMobile && isSidebarOpen"
           class="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -146,8 +144,7 @@ watch(
                bg-white dark:bg-gray-900
                shadow-lg
                transform"
-          @click.stop
-        >
+          @click.stop>
           <Sidebar />
         </div>
       </Transition>

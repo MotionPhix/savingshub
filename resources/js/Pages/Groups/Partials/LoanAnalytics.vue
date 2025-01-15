@@ -53,13 +53,13 @@ const monthlyLoanTrendChartOptions = computed(() => ({
   yaxis: {
     title: { text: 'Loan Amount' },
     labels: {
-      formatter: (value) => `$${value.toFixed(2)}`
+      formatter: (value) => formatCurrency(value)
     }
   },
   tooltip: {
     theme: 'light',
     y: {
-      formatter: (value) => `$${value.toFixed(2)}`
+      formatter: (value) => formatCurrency(value)
     }
   }
 }))

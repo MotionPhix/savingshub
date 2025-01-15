@@ -16,6 +16,7 @@ use App\Http\Controllers\GroupInvitationController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 // Guest Routes (No authentication required)
 Route::middleware('guest')->group(function () {
@@ -124,6 +125,17 @@ Route::middleware(['auth', 'verified', 'group.currency'])->group(function () {
       )->name('show');
 
       // Group Settings
+      Route::get(
+        '/currency/settings',
+        function () {
+          $currencyService = app(\App\Services\CurrencyService::class);
+
+          return Inertia::modal('Groups/CurrencySetter', [
+            'availableCurrency' => $currencyService->getAvailableCurrencies()
+          ])->baseUrl('/groups');
+        }
+      )->name('settings.currency');
+
       Route::patch(
         '/u/settings/{group:uuid}',
         [GroupController::class, 'updateSettings']

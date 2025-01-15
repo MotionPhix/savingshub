@@ -29,6 +29,11 @@ class CurrencyService
       ?? self::SUPPORTED_CURRENCIES['MWK'];
   }
 
+  public function getAvailableCurrencies(): array
+  {
+    return self::SUPPORTED_CURRENCIES;
+  }
+
   public function formatCurrency(
     float $amount,
     Group $group = null,

@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Group;
 use App\Models\Loan;
 use App\Models\User;
+use App\Notifications\LoanDefaultNotification;
+use App\Notifications\LoanRequestNotification;
 use App\Services\LoanInterest\LoanInterestCalculatorFactory;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;

@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GroupSettingsRequest;
 use App\Models\Group;
+use App\Models\GroupInvitation;
 use App\Models\GroupMember;
 use App\Models\User;
 use App\Services\GroupActivityService;
 use App\Services\GroupService;
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -16,11 +18,14 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Inertia;
 
 class GroupController extends Controller implements HasMiddleware
 {
+  use AuthorizesRequests;
+
   public function __construct(
     protected GroupService $groupService,
     protected GroupActivityService $activityService
@@ -128,9 +133,8 @@ class GroupController extends Controller implements HasMiddleware
     return Inertia::render('Groups/Create', [
       'group_types' => $this->getGroupTypes(),
       'contribution_frequencies' => $this->getContributionFrequencies(),
-      'loan_interest_types' => $this->getLoanInterestTypes(),
-      'canCreateGroup' => true,
-      'existingGroups' => $user->groups()->select('uuid', 'name')->get()
+      'loan_interest_types' => [], //$this->getLoanInterestTypes(),
+      'existingGroups' => $user->groups()->select('groups.uuid', 'groups.name')->get()
     ]);
   }
 
@@ -392,31 +396,116 @@ class GroupController extends Controller implements HasMiddleware
   // Add rate limiting to sensitive methods
   public function invite(Request $request)
   {
-    // Validate input
+    // Check user's permission to invite members
+    $group = Group::findOrFail(session('active_group_id'));
+    $this->authorize('invite-members', $group);
+
+    // Validate input with more comprehensive rules
     $validated = $request->validate([
-      'emails' => 'required|array|max:10',
-      'emails.*' => 'email|unique:users,email',
-      'role' => 'in:member,treasurer,secretary',
-      'message' => 'nullable|string|max:500'
+      'emails' => [
+        'required',
+        'array',
+        'min:1',
+        'max:10', // Limit to 10 invites at once
+        function ($attribute, $value, $fail) {
+          // Additional custom validation
+          $uniqueEmails = array_unique($value);
+          if (count($uniqueEmails) !== count($value)) {
+            $fail('Duplicate email addresses are not allowed.');
+          }
+        }
+      ],
+      'emails.*' => [
+        'required',
+        'email:rfc,dns', // More strict email validation
+        'not_in:' . auth()->user()->email, // Prevent inviting self
+        function ($attribute, $value, $fail) {
+          // Check if email is already a member of the group
+          $emailIndex = explode('.', $attribute)[1];
+          $existingMembership = GroupMember::where('group_id', session('active_group_id'))
+            ->whereHas('user', function ($query) use ($value) {
+              $query->where('email', $value);
+            })
+            ->exists();
+
+          if ($existingMembership) {
+            $fail("The email {$value} is already a member of this group.");
+          }
+
+          // Check if there's a pending invitation
+          $existingInvitation = GroupInvitation::where('group_id', session('active_group_id'))
+            ->where('email', $value)
+            ->where('status', 'pending')
+            ->exists();
+
+          if ($existingInvitation) {
+            $fail("An invitation has already been sent to {$value}.");
+          }
+        }
+      ],
+      'role' => [
+        'required',
+        'in:member,treasurer,secretary',
+        function ($attribute, $value, $fail) use ($group) {
+          // Additional role-based authorization check
+          if (!auth()->user()->can('assign-' . $value, $group)) {
+            $fail('You are not authorized to assign this role.');
+          }
+        }
+      ],
+      'message' => 'nullable|string|max:500|profane_filter'
+    ], [
+      'emails.max' => 'You can invite a maximum of 10 members at a time.',
+      'emails.*.email' => 'Please provide a valid email address.',
+      'emails.*.not_in' => 'You cannot invite yourself to the group.',
     ]);
 
-    // Implement rate limiting
-    if (RateLimiter::tooManyAttempts('invite-members:' .  session('active_group_id'), 5)) {
+    // Implement sophisticated rate limiting
+    $key = 'group-invite:' . auth()->id() . ':' . session('active_group_id');
+
+    // Allow 5 invitations per hour
+    if (RateLimiter::tooManyAttempts($key, 5, 60)) {
+      $seconds = RateLimiter::availableIn($key);
       return back()->withErrors([
-        'message' => 'Too many invitation attempts. Please try again later.'
+        'message' => "Too many invitation attempts. Please try again in {$seconds} seconds."
       ]);
     }
 
     try {
+      // Begin database transaction
+      DB::beginTransaction();
+
+      // Attempt to send invitations
       $responses = $this->groupService->inviteMembers(
-        $request->input('emails'),
-        $request->input('role', 'member'),
-        $request->message
+        $validated['emails'],
+        $validated['role'],
+        $validated['message'] ?? null
       );
 
-      return back()->with('invitationResponse', $responses);
+      // Increment rate limiter attempts
+      RateLimiter::hit($key, 60);
+
+      // Commit transaction
+      DB::commit();
+
+      return back()
+        ->with('flush', $responses)
+        ->with('flush', 'Invitations sent successfully.');
+
     } catch (\Exception $e) {
-      return back()->withErrors(['message' => $e->getMessage()]);
+      // Rollback transaction
+      DB::rollBack();
+
+      // Log the error
+      Log::error('Group Invitation Error: ' . $e->getMessage(), [
+        'user_id' => auth()->id(),
+        'group_id' => session('active_group_id'),
+        'emails' => $validated['emails']
+      ]);
+
+      return back()->withErrors([
+        'message' => 'An error occurred while sending invitations. Please try again.'
+      ]);
     }
   }
 

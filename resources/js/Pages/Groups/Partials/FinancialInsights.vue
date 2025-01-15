@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import {
   Card,
@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/Components/ui/card"
+import {formatCurrency} from "@/lib/formatters";
 
 const props = defineProps({
   contributionInsights: {
@@ -43,13 +44,13 @@ const monthlyContributionChartOptions = computed(() => ({
   yaxis: {
     title: { text: 'Contribution Amount' },
     labels: {
-      formatter: (value) => `$${value.toFixed(2)}`
+      formatter: (value) => formatCurrency(value)
     }
   },
   tooltip: {
     theme: 'light',
     y: {
-      formatter: (value) => `$${value.toFixed(2)}`
+      formatter: (value) => formatCurrency(value)
     }
   }
 }))

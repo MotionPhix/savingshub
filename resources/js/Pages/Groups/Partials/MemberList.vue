@@ -18,6 +18,7 @@ import {Button} from "@/Components/ui/button"
 import {MoreVerticalIcon} from "lucide-vue-next"
 import UserAvatar from "@/Layouts/Partials/UserAvatar.vue";
 import {useInitials} from "@/composables/useInitials.js";
+import {formatCurrency} from "@/lib/formatters";
 
 const props = withDefaults(
   defineProps<{
@@ -52,8 +53,6 @@ const props = withDefaults(
     canManage: false
   }
 )
-
-console.log(props.members)
 
 const {getInitials} = useInitials()
 const selectedMember = ref(null)
@@ -112,21 +111,11 @@ const memberActions = [
           </TableCell>
           <TableCell class="capitalize">{{ member.role }}</TableCell>
           <TableCell>
-            {{
-              new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD'
-              }).format(member.contribution_stats.total_paid)
-            }}
+            {{ formatCurrency(member.contribution_stats.total_paid) }}
           </TableCell>
 
           <TableCell>
-            {{
-              new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD'
-              }).format(member.loan_stats.total_borrowed)
-            }}
+            {{ formatCurrency(member.loan_stats.total_borrowed) }}
           </TableCell>
           <TableCell>{{ member?.joined_at }}</TableCell>
           <TableCell>

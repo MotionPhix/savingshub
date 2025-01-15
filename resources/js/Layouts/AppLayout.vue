@@ -1,21 +1,20 @@
-<script setup lang="ts">
-import {onMounted, onUnmounted, ref, watch} from "vue";
+<script setup>
+import {Toaster, toast} from 'vue-sonner'
 import SiteHeader from "@/Layouts/Partials/SiteHeader.vue";
 import Sidebar from "@/Layouts/Partials/Sidebar.vue";
 import SiteFooter from "@/Layouts/Partials/SiteFooter.vue";
-import {Button} from "@/Components/ui/button";
-import {Toaster, toast} from 'vue-sonner'
+import {onMounted, onUnmounted, ref, watch} from "vue";
+import {Button} from "@/Components/ui/button/index.js";
 import {usePage} from "@inertiajs/vue3";
 
 const isMobile = ref(window.innerWidth < 1024)
 const isSidebarOpen = ref(false)
 
 const checkScreenSize = () => {
-  const prevIsMobile = isMobile.value
   isMobile.value = window.innerWidth < 1024
 
-  // Automatically close sidebar when switching to mobile
-  if (!prevIsMobile && isMobile.value) {
+  // Automatically close sidebar on mobile
+  if (isMobile.value) {
     isSidebarOpen.value = false
   }
 }
@@ -24,59 +23,37 @@ const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
 
-const closeSidebar = () => {
-  isSidebarOpen.value = false
-}
-
-// Handle escape key to close sidebar
-const handleEscapeKey = (e) => {
-  if (isMobile && isSidebarOpen.value && e.key === 'Escape') {
-    closeSidebar()
-  }
-}
-
 onMounted(() => {
   window.addEventListener('resize', checkScreenSize)
-  window.addEventListener('keydown', handleEscapeKey)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkScreenSize)
-  window.removeEventListener('keydown', handleEscapeKey)
 })
 
 // Watch for error messages in Inertia props
 watch(
   () => usePage().props.errors,
   (errors) => {
+    // Handle generic error message
     if (errors.message) {
       toast.error(errors.message, {
         duration: 5000,
       });
+
+      /*toast.error('Check your action', {
+        description: errors.message,
+        duration: 5000,
+      })*/
     }
 
+    // Optionally handle specific error types
     if (errors.authorization) {
       toast.warning('Access Denied', {
         description: errors.authorization,
         duration: 5000,
       })
     }
-  },
-  {immediate: true}
-)
-
-// Watch for error messages in Inertia props
-watch(
-  () => usePage().props.flush,
-  (newFlush) => {
-
-    if (newFlush !== null || newFlush !== 'null') {
-      toast.warning(newFlush, {
-        duration: 5000,
-      });
-    }
-
-    usePage().props.flush = null
   },
   {immediate: true}
 )
@@ -91,7 +68,6 @@ watch(
         <Button
           size="icon"
           variant="ghost"
-          v-if="isMobile"
           @click="toggleSidebar">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" width="24" height="24"
                fill="none">
@@ -114,66 +90,13 @@ watch(
       />
 
       <!-- Mobile Sidebar (Overlay) -->
-      <!--      <Transition-->
-      <!--        enter-active-class="transition-opacity duration-300 ease-out"-->
-      <!--        enter-from-class="opacity-0"-->
-      <!--        enter-to-class="opacity-100"-->
-      <!--        leave-active-class="transition-opacity duration-300 ease-in"-->
-      <!--        leave-from-class="opacity-100"-->
-      <!--        leave-to-class="opacity-0">-->
-      <!--        <div-->
-      <!--          v-if="isMobile && isSidebarOpen"-->
-      <!--          class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"-->
-      <!--          @click="closeSidebar">-->
-      <!--          <Transition-->
-      <!--            enter-active-class="transition-transform duration-300 ease-out"-->
-      <!--            enter-from-class="-translate-x-full"-->
-      <!--            enter-to-class="translate-x-0"-->
-      <!--            leave-active-class="transition-transform duration-300 ease-in"-->
-      <!--            leave-from-class="translate-x-0"-->
-      <!--            leave-to-class="-translate-x-full">-->
-      <!--            <Sidebar-->
-      <!--              @click.stop-->
-      <!--              class="fixed top-16 bottom-0 left-0 w-64 max-w-[80%] bg-white dark:bg-gray-900 shadow-lg transform"-->
-      <!--            />-->
-      <!--          </Transition>-->
-      <!--        </div>-->
-      <!--      </Transition>-->
-
-      <div class="fixed inset-0 z-40">
-        <!-- Backdrop -->
-        <Transition
-          enter-active-class="transition-opacity duration-300"
-          enter-from-class="opacity-0"
-          enter-to-class="opacity-100"
-          leave-active-class="transition-opacity duration-300"
-          leave-from-class="opacity-100"
-          leave-to-class="opacity-0">
-          <div
-            v-if="isMobile && isSidebarOpen"
-            class="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            @click="closeSidebar"
-          />
-        </Transition>
-
-        <!-- Sidebar -->
-        <Transition
-          enter-active-class="transition-transform duration-300 ease-out"
-          enter-from-class="translate-x-[-100%]"
-          enter-to-class="translate-x-0"
-          leave-active-class="transition-transform duration-300 ease-in"
-          leave-from-class="translate-x-0"
-          leave-to-class="translate-x-[-100%]">
-          <div
-            v-if="isMobile && isSidebarOpen"
-            class="absolute top-16 bottom-0 left-0 w-64 max-w-[80%]
-               bg-white dark:bg-gray-900
-               shadow-lg
-               transform"
-            @click.stop>
-            <Sidebar />
-          </div>
-        </Transition>
+      <div
+        v-if="isMobile && isSidebarOpen"
+        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        @click="isSidebarOpen = false">
+        <Sidebar
+          class="w-64 mt-14 max-w-[80%] h-full bg-white dark:bg-gray-900 shadow-lg transform translate-x-0 transition-transform duration-300"
+        />
       </div>
 
       <!-- Main Content Area -->
@@ -200,10 +123,3 @@ watch(
     </div>
   </div>
 </template>
-
-<style>
-/* Prevent body scrolling when sidebar is open */
-body.sidebar-open {
-  overflow: hidden;
-}
-</style>

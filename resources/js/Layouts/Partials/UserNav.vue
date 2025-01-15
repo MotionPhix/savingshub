@@ -38,7 +38,7 @@ const {getInitials} = useInitials()
 
     <DropdownMenuContent align="end">
       <DropdownMenuItem
-        @click="router.visit(route('profile.edit'), { replace: true })">
+        @click="router.visit(route('profile.index'), { replace: true })">
         <UserIcon class="w-4 h-4 mr-2"/>
         Profile
       </DropdownMenuItem>

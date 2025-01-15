@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureGroupCurrency
@@ -23,12 +24,14 @@ class EnsureGroupCurrency
     $currencyService = app(\App\Services\CurrencyService::class);
 
     // Check if group needs currency configuration
-    if ($currencyService->groupNeedsCurrencyConfiguration($group)) {
+    /*if ($currencyService->groupNeedsCurrencyConfiguration($group) &&
+      !$request->url() !== 'groups/settings/currency') {
       // Redirect to settings with a flash message
-      return redirect()
-        ->route('groups.settings', $group->uuid)
-        ->with('warning', 'Please configure your group\'s currency settings.');
-    }
+      return Inertia::modal('Groups/CurrencySetter', [
+        'warning' => 'Please configure your group\'s currency settings.',
+        'availableCurrencies' => $currencyService->getAvailableCurrencies()
+      ])->baseUrl('/groups');
+    }*/
 
     return $next($request);
   }

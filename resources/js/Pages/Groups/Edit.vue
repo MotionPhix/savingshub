@@ -1,7 +1,7 @@
 <script setup>
 import {computed, ref} from 'vue'
 import {useForm, router} from '@inertiajs/vue3'
-import AppLayout from '@/Layouts/AppLayout.vue'
+import AppLayout from '@/Layouts/ScrewedAppLayout.txt'
 import {
   Card, CardContent, CardHeader, CardTitle
 } from '@/Components/ui/card'

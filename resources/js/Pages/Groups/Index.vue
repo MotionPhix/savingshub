@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {ref, computed} from 'vue'
 import {
   Card,
   CardContent,
@@ -15,7 +14,6 @@ import {
 } from "@/Components/ui/dropdown-menu"
 import {Button} from "@/Components/ui/button"
 import {
-  Users2Icon,
   PlusIcon,
   MoreVerticalIcon
 } from "lucide-vue-next"

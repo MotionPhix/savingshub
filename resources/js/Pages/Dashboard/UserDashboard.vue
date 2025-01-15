@@ -21,7 +21,7 @@ const props = defineProps<{
 }>()
 
 const { getInitials } = useInitials()
-const currency: string = usePage().props.currency
+const currency: string = <string>usePage().props.currency
 
 const setGroup = (group) => {
   router.post(route('groups.set.active', group.uuid), {}, {
