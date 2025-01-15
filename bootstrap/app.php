@@ -21,7 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
     $middleware->alias([
       'active.group' => \App\Http\Middleware\EnsureActiveGroup::class,
-      'pending.invitation' => \App\Http\Middleware\HandlePendingInvitation::class
+      'group.currency' => \App\Http\Middleware\EnsureGroupCurrency::class,
+      'pending.invitation' => \App\Http\Middleware\HandlePendingInvitation::class,
     ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {

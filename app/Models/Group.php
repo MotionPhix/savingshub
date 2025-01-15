@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CurrencyService;
 use App\Services\GroupActivityService;
 use App\Services\LoanInterest\FixedInterestCalculator;
 use App\Services\LoanInterest\TieredInterestCalculator;
@@ -338,5 +339,23 @@ class Group extends Model
     return $this->members()
       ->where('status', 'invited')
       ->count();
+  }
+
+  public function getFormattedContributionAmount(): string
+  {
+    return app(CurrencyService::class)->formatCurrency(
+      $this->contribution_amount,
+      $this
+    );
+  }
+
+  public function getFormattedMaxLoanAmount(): ?string
+  {
+    return $this->max_loan_amount
+      ? app(CurrencyService::class)->formatCurrency(
+        $this->max_loan_amount,
+        $this
+      )
+      : null;
   }
 }

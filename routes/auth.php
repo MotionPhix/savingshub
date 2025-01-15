@@ -50,7 +50,7 @@ Route::middleware('guest')->group(function () {
 });
 
 // Authenticated Routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'group.currency'])->group(function () {
   // Email Verification Routes
   Route::get('verify-email', EmailVerificationPromptController::class)
     ->name('verification.notice');
