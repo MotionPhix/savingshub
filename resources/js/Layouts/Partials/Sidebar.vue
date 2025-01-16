@@ -18,9 +18,9 @@ const {user, userGroups} = usePage().props.auth
 <template>
   <aside
     id="sidebar"
-    class="w-64 fixed h-screen pt-2 transition-transform -translate-x-full bg-white border-r border-gray-200 md:translate-x-0 dark:bg-gray-800 dark:border-gray-700"
+    class="w-64 fixed h-screen pt-2 transition-transform -translate-x-full bg-background border-r border-border md:translate-x-0"
     aria-label="Sidebar">
-    <div class="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800">
+    <div class="h-full px-3 pb-4 overflow-y-auto bg-background">
       <ul class="space-y-2">
         <SidebarItem
           :href="route('dashboard')"
@@ -28,8 +28,8 @@ const {user, userGroups} = usePage().props.auth
           :icon="HomeIcon"
         />
 
-        <li class="pt-4 mt-4 space-y-2 border-t border-gray-200 dark:border-gray-700">
-          <span class="ml-3 text-sm font-semibold text-gray-500 uppercase dark:text-gray-400">
+        <li class="pt-4 mt-4 space-y-2 border-t border-border">
+          <span class="ml-3 text-sm font-semibold text-muted-foreground uppercase">
             Groups
           </span>
         </li>
@@ -47,8 +47,8 @@ const {user, userGroups} = usePage().props.auth
           :icon="PlusCircleIcon"
         />
 
-        <li class="pt-4 mt-4 space-y-2 border-t border-gray-200 dark:border-gray-700">
-          <span class="ml-3 text-sm font-semibold text-gray-500 uppercase dark:text-gray-400">
+        <li class="pt-4 mt-4 space-y-2 border-t border-border">
+          <span class="ml-3 text-sm font-semibold text-muted-foreground uppercase">
             Financial
           </span>
         </li>
@@ -67,8 +67,8 @@ const {user, userGroups} = usePage().props.auth
 
         <li
           v-if="user.is_admin"
-          class="pt-4 mt-4 space-y-2 border-t border-gray-200 dark:border-gray-700">
-          <span class="ml-3 text-sm font-semibold text-gray-500 uppercase dark:text-gray-400">
+          class="pt-4 mt-4 space-y-2 border-t border-border">
+          <span class="ml-3 text-sm font-semibold text-muted-foreground uppercase">
             Admin
           </span>
         </li>
@@ -87,8 +87,8 @@ const {user, userGroups} = usePage().props.auth
           />
         </template>
 
-        <li class="pt-4 mt-4 space-y-2 border-t border-gray-200 dark:border-gray-700">
-          <span class="ml-3 text-sm font-semibold text-gray-500 uppercase dark:text-gray-400">
+        <li class="pt-4 mt-4 space-y-2 border-t border-border">
+          <span class="ml-3 text-sm font-semibold text-muted-foreground uppercase">
             Account
           </span>
         </li>

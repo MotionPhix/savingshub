@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
+use Illuminate\Support\Facades\Log;
 
 return Application::configure(basePath: dirname(__DIR__))
   ->withRouting(
@@ -26,5 +28,18 @@ return Application::configure(basePath: dirname(__DIR__))
     ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {
-    //
+    $exceptions->render(function (InvalidSignatureException $e) {
+
+      // Log the invalid signature attempt
+      Log::warning('Invalid invitation signature attempt', [
+        'token' => $e->getMessage(),
+      ]);
+
+      // Render an Inertia error page
+      return Inertia('Errors/LinkExpired', [
+        'message' => 'The invitation link has expired or is invalid.',
+        'status' => 403
+      ]);
+
+    });
   })->create();

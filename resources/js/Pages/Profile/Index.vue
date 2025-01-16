@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import {router, useForm} from '@inertiajs/vue3'
-import {Card, CardContent, CardHeader, CardTitle} from '@/Components/ui/card'
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/Components/ui/card'
 import {Input} from '@/Components/ui/input'
 import {Label} from '@/Components/ui/label'
 import {Button} from '@/Components/ui/button'
@@ -16,6 +16,8 @@ import {useUserStore} from "@/stores/user";
 
 const props = defineProps<{
   user: {
+    id: number
+    uuid: string
     name: string
     email: string
     phone_number?: string
@@ -256,9 +258,12 @@ const locales = [
 <template>
   <AppLayout>
     <div class="mx-auto sm:px-4 py-8">
-      <Card class="max-w-2xl mx-auto dark:bg-gray-900">
+      <Card class="max-w-2xl mx-auto bg-background">
         <CardHeader>
-          <CardTitle>Profile Settings</CardTitle>
+          <CardTitle class="text-foreground">Profile Settings</CardTitle>
+          <CardDescription class="text-muted-foreground">
+            Manage your profile information and preferences
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -272,14 +277,19 @@ const locales = [
                 :fallback="getInitials(user.name)"
               />
 
-              <div class="text-center mt-4 sm:mt-0 sm:text-left relative">
-                <Label for="avatar">Change Avatar</Label>
+              <div class="text-center mt-4 sm:mt-0 sm:text-left relative w-full">
+                <Label
+                  for="avatar"
+                  class="text-foreground"
+                >
+                  Change Avatar
+                </Label>
                 <Input
                   id="avatar"
                   type="file"
                   accept="image/jpeg,image/png,image/gif,image/webp"
                   @change="handleAvatarUpload"
-                  class="mt-2"
+                  class="mt-2 file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                 />
 
                 <!-- Image Preview with Compression Info -->
@@ -355,7 +365,8 @@ const locales = [
                   label="Bio"
                   placeholder="Write a few things about yourself here."
                   v-model="form.bio"
-                  type="textarea"/>
+                  type="textarea"
+                />
               </div>
 
               <div>
@@ -384,13 +395,15 @@ const locales = [
             <div class="flex justify-end space-x-4">
               <Button
                 variant="outline"
-                @click="$inertia.get(route('dashboard'))">
+                @click="$inertia.get(route('dashboard'))"
+                class="hover:bg-accent hover:text-accent-foreground">
                 Cancel
               </Button>
 
               <Button
                 @click="updateProfile"
-                :disabled="form.processing">
+                :disabled="form.processing"
+                class="bg-primary text-primary-foreground hover:bg-primary/90">
                 Save Changes
               </Button>
             </div>

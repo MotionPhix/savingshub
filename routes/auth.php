@@ -93,25 +93,30 @@ Route::middleware(['auth', 'verified', 'group.currency'])->group(function () {
     [DashboardController::class, 'index']
   )->name('dashboard');
 
-  Route::get(
-    '/profile',
-    [ProfileController::class, 'edit']
-  )->name('profile.index');
+  // Auth user profile management
+  Route::prefix('profile')->group(function () {
 
-  Route::patch(
-    '/profile/{user:uuid}',
-    [ProfileController::class, 'update']
-  )->name('profile.update');
+    Route::get(
+      '/s',
+      [ProfileController::class, 'edit']
+    )->name('profile.index');
 
-  Route::delete(
-    '/profile',
-    [ProfileController::class, 'destroy']
-  )->name('profile.destroy');
+    Route::patch(
+      '/u/{user:uuid}',
+      [ProfileController::class, 'update']
+    )->name('profile.update');
 
-  Route::delete(
-    '/profile',
-    [ProfileController::class, 'deleteAvatar']
-  )->name('profile.avatar.destroy');
+    Route::delete(
+      '/a/d',
+      [ProfileController::class, 'deleteAvatar']
+    )->name('profile.avatar.destroy');
+
+    Route::delete(
+      '/p/d',
+      [ProfileController::class, 'destroy']
+    )->name('profile.destroy');
+
+  });
 
   // Group Routes (Requires active group middleware)
   Route::middleware('active.group')->group(function () {
@@ -120,13 +125,13 @@ Route::middleware(['auth', 'verified', 'group.currency'])->group(function () {
     Route::prefix('groups')->name('groups.')->group(function () {
 
       Route::get(
-        '/g/{group:uuid}',
+        '/s/{group:uuid}',
         [GroupController::class, 'show']
       )->name('show');
 
       // Group Settings
       Route::get(
-        '/currency/settings',
+        '/c/settings',
         function () {
           $currencyService = app(\App\Services\CurrencyService::class);
 
@@ -142,131 +147,135 @@ Route::middleware(['auth', 'verified', 'group.currency'])->group(function () {
       )->name('settings');
 
       Route::get(
-        '/invite-form/{group:uuid}',
+        '/i/form/{group:uuid}',
         [GroupController::class, 'showInvite']
       )->name('invite.form');
 
       Route::post(
-        '/invite',
+        '/i/members',
         [GroupController::class, 'invite']
       )->name('invite.send');
 
       Route::post(
-        '/invitations/{invitation}/resend',
+        '/i/resend/{invitation:uuid}',
         [GroupInvitationController::class, 'resendInvitation']
       )->name('invite.resend')
         ->middleware('can:resend,invitation');
     });
 
     // Contributions Routes
-    Route::prefix('contributions')->name('contributions.')->group(function () {
-      Route::get(
-        '/',
-        [ContributionController::class, 'index']
-      )->name('index');
+    Route::prefix('contributions')
+      ->name('contributions.')
+      ->group(function () {
+        Route::get(
+          '/',
+          [ContributionController::class, 'index']
+        )->name('index');
 
-      Route::get(
-        '/create',
-        [ContributionController::class, 'create']
-      )->name('create');
+        Route::get(
+          '/new-contribution',
+          [ContributionController::class, 'create']
+        )->name('create');
 
-      Route::post(
-        '/',
-        [ContributionController::class, 'store']
-      )->name('store');
+        Route::post(
+          '/',
+          [ContributionController::class, 'store']
+        )->name('store');
 
-      Route::get(
-        '/{contribution}',
-        [ContributionController::class, 'show']
-      )->name('show');
+        Route::get(
+          '/s/{contribution:uuid}',
+          [ContributionController::class, 'show']
+        )->name('show');
 
-      Route::put(
-        '/{contribution}',
-        [ContributionController::class, 'update']
-      )->name('update');
+        Route::put(
+          '/u/{contribution:uuid}',
+          [ContributionController::class, 'update']
+        )->name('update');
 
-      Route::delete(
-        '/{contribution}',
-        [ContributionController::class, 'destroy']
-      )->name('destroy');
-    });
+        Route::delete(
+          '/d/{contribution:uuid}',
+          [ContributionController::class, 'destroy']
+        )->name('destroy');
+      });
 
     // Loans Routes
-    Route::prefix('loans')->name('loans.')->group(function () {
-      Route::get(
-        '/',
-        [LoanController::class, 'index']
-      )->name('index');
+    Route::prefix('loans')
+      ->name('loans.')
+      ->group(function () {
+        Route::get(
+          '/',
+          [LoanController::class, 'index']
+        )->name('index');
 
-      Route::get(
-        '/create',
-        [LoanController::class, 'create']
-      )->name('create');
+        Route::get(
+          '/new-loan',
+          [LoanController::class, 'create']
+        )->name('create');
 
-      Route::post(
-        '/',
-        [LoanController::class, 'store']
-      )->name('store');
+        Route::post(
+          '/',
+          [LoanController::class, 'store']
+        )->name('store');
 
-      Route::get(
-        '/{loan}',
-        [LoanController::class, 'show']
-      )->name('show');
+        Route::get(
+          '/s/{loan:uuid}',
+          [LoanController::class, 'show']
+        )->name('show');
 
-      Route::put(
-        '/{loan}',
-        [LoanController::class, 'update']
-      )->name('update');
+        Route::put(
+          '/u/{loan:uuid}',
+          [LoanController::class, 'update']
+        )->name('update');
 
-      Route::delete(
-        '/{loan}',
-        [LoanController::class, 'destroy']
-      )->name('destroy');
+        Route::delete(
+          '/d/{loan:uuid}',
+          [LoanController::class, 'destroy']
+        )->name('destroy');
 
-    });
+      });
   });
 
   // Group Management Routes (Unrestricted)
-  Route::prefix('groups')->name('groups.')->group(function () {
+  Route::prefix('groups')
+    ->name('groups.')
+    ->group(function () {
 
-    Route::get(
-      '/',
-      [GroupController::class, 'index']
-    )->name('index');
+      Route::get(
+        '/',
+        [GroupController::class, 'index']
+      )->name('index');
 
-    Route::get(
-      '/create',
-      [GroupController::class, 'create']
-    )->name('create');
+      Route::get(
+        '/new-group',
+        [GroupController::class, 'create']
+      )->name('create');
 
-    Route::get(
-      '/e/{group:uuid}',
-      [GroupController::class, 'edit']
-    )->name('edit');
+      Route::get(
+        '/e/{group:uuid}',
+        [GroupController::class, 'edit']
+      )->name('edit');
 
-    Route::post(
-      '/',
-      [GroupController::class, 'store']
-    )->name('store');
+      Route::post(
+        '/',
+        [GroupController::class, 'store']
+      )->name('store');
 
-    Route::post(
-      '/select/{group:uuid}',
-      [GroupController::class, 'activate']
-    )->name('set.active');
+      Route::post(
+        '/s/{group:uuid}',
+        [GroupController::class, 'activate']
+      )->name('set.active');
 
-    // Group Invitation Routes
-    Route::get(
-      '/invitations/{token}/accept',
-      [GroupInvitationController::class, 'handleInvitationLink']
-    )->name('invite.accept')
-      ->middleware('signed');
+      // Group Invitation Routes
+      Route::get(
+        '/i/a/{token}',
+        [GroupInvitationController::class, 'handleInvitationLink']
+      )->name('invite.accept')->middleware('signed');
 
-    Route::get(
-      '/invitations/{token}/decline',
-      [GroupInvitationController::class, 'decline']
-    )->name('invite.decline')
-      ->middleware('signed');
-  });
+      Route::get(
+        '/i/d/{token}',
+        [GroupInvitationController::class, 'decline']
+      )->name('invite.decline')->middleware('signed');
+    });
 
   // Members Routes
   Route::prefix('members')->name('members.')->group(function () {
@@ -276,12 +285,12 @@ Route::middleware(['auth', 'verified', 'group.currency'])->group(function () {
     )->name('index');
 
     Route::post(
-      '/{user}/change-role',
+      '/change-role/{user:uuid}',
       [GroupMemberController::class, 'changeRole']
     )->name('change-role');
 
     Route::delete(
-      '/{user}',
+      '/d/{user:uuid}',
       [GroupMemberController::class, 'remove']
     )->name('remove');
   });

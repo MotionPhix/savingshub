@@ -26,30 +26,18 @@ class GroupInvitationController extends Controller
     protected GroupActivityService $activityService
   ) {}
 
-  public function handleInvitationLink($token)
+  public function handleInvitationLink(Request $request, $token)
   {
+    /*// Verify signed route
+    if (!$request->hasValidSignature()) {
+      return back()->with('flush', 'The invitation link seems to have been tampered with');
+    }*/
+
+    $invitation = GroupInvitation::where('token', $token)
+      ->where('accepted_at', null)
+      ->firstOrFail();
+
     try {
-      $invitation = GroupInvitation::where('token', $token)
-        ->where('accepted_at', null)
-        ->firstOrFail();
-
-      // Check expiration
-      if (now()->greaterThan($invitation->expires_at)) {
-        // Log expired invitation attempt
-        $this->logInvitationActivity(
-          $invitation,
-          'invitation_expired',
-          ['reason' => 'Invitation link expired']
-        );
-
-        return redirect()
-          ->route('login')
-          ->with(
-            'flush',
-            'This invitation has expired. Please contact the group admin for a new invitation.'
-          );
-      }
-
       // If user is not authenticated
       if (!auth()->check()) {
         // Store the token in the session
@@ -65,6 +53,28 @@ class GroupInvitationController extends Controller
         ]);
       }
 
+      // Check expiration
+      if (now()->greaterThan($invitation->expires_at)) {
+        // Log expired invitation attempt
+        $this->logInvitationActivity(
+          $invitation,
+          'invitation_expired',
+          ['reason' => 'Invitation link expired']
+        );
+
+        return back()
+          ->with(
+            'flush',
+            'This invitation has expired. Please contact the group admin for a new invitation.'
+          );
+      }
+
+      // Additional security checks
+      if ($invitation->email !== $request->user()?->email) {
+        return redirect(route('login'))
+          ->with('flush', 'Invalid invitation link.');
+      }
+
       // User is already logged in, proceed with invitation acceptance
       return $this->accept($token);
 
@@ -74,10 +84,14 @@ class GroupInvitationController extends Controller
         'ip' => request()->ip()
       ]);
 
-      return redirect()->route('login')
-        ->withErrors([
-          'message' => 'Invalid or used invitation link.'
-        ]);
+      if (!Auth::check()) {
+        return redirect(route('login'))
+          ->with([
+            'flush' => 'Invalid or used invitation link.'
+          ]);
+      }
+
+      return back()->with('flush', 'Invalid invitation attempt');
     }
   }
 

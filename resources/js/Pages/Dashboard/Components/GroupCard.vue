@@ -44,7 +44,7 @@ const getMemberRole = (group) => {
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center space-x-3">
         <div
-          class="w-12 h-12 rounded-full flex items-center justify-center"
+          class="w-12 h-12 rounded-full shrink-0 flex items-center justify-center"
           :style="{ backgroundColor: getGroupColor(group.id) }">
           <span class="text-white font-bold">
             {{ getInitials(group.name).toUpperCase() }}

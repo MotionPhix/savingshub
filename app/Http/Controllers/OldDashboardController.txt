@@ -24,194 +24,62 @@ class DashboardController extends Controller
     ];
   }
 
+  /**
+   * Show the application dashboard.
+   *
+   * @return \Inertia\Response
+   */
   public function index(): Response
   {
-    $user = Auth::user();
+    $user = Auth::user(); // 'permission:view dashboard'
 
-    // Super admin dashboard
+    // Check if user is a super admin
     if ($user->hasRole('super_admin')) {
       return $this->superAdminDashboard();
     }
 
-    // Get groups user is a member of with detailed relationships
+    // Get groups user is a member of
     $groups = $user->groups()->with([
-      'members' => function ($query) use ($user) {
-        $query->where('user_id', $user->id);
-      },
-      'contributions',
-      'loans'
-    ])->withCount([
-      'members',
-      'contributions',
-      'loans'
-    ])->get();
+      'members' => function ($query) {
+        $query->where('user_id', Auth::id());
+      }
+    ])->withCount('members')->get();
 
-    // Determine user's roles across groups
-    $userGroupRoles = $groups->mapWithKeys(function ($group) use ($user) {
-      $membership = $group->members->first(fn($member) => $member->user_id === $user->id);
-      return [$group->id => $membership ? $membership->role : null];
-    });
+    // Basic user analytics
+    $userAnalytics = $this->getUserAnalytics($user, $groups);
 
-    // Specialized dashboard data based on user's most prominent role
-    $dashboardData = $this->getDashboardDataByRole($user, $groups, $userGroupRoles);
-
-    return Inertia::render('Dashboard/Home', [
+    return Inertia::render('Dashboard/UserDashboard', [
       'user' => $user,
       'groups' => $groups,
-      'userGroupRoles' => $userGroupRoles,
-      'dashboardData' => $dashboardData,
-      'analytics' => $this->getUserAnalytics($user, $groups)
+      'analytics' => $userAnalytics,
+      'canCreateGroup' => $user->can('create', Group::class)
     ]);
+
+    /*// Fetch user's groups
+    $groups = $user->hasRole('super-admin')
+      ? Group::with('members')->get()
+      : $user->groups()->with('members')->get();
+
+    // Dashboard statistics
+    $stats = $this->getDashboardStatistics($user);
+
+    // Recent activities
+    $recentActivities = $this->getRecentActivities($user);
+
+    // Upcoming contributions
+    $upcomingContributions = $this->getUpcomingContributions($user);
+
+    // Savings progress data
+    $savingsProgressData = $this->getSavingsProgressData($user);
+
+    return Inertia::render('Dashboard/Index', [
+      'groups' => $groups,
+      'stats' => $stats,
+      'recentActivities' => $recentActivities,
+      'upcomingContributions' => $upcomingContributions,
+      'savingsProgressData' => $savingsProgressData
+    ]);*/
   }
-
-  protected function getDashboardDataByRole(User $user, $groups, $userGroupRoles)
-  {
-    // Determine the most significant role
-    $prominentRole = $this->determineProminentRole($userGroupRoles);
-
-    return match ($prominentRole) {
-      4 => $this->getGroupAdminDashboardData($user, $groups),
-      3 => $this->getTreasurerDashboardData($user, $groups),
-      2 => $this->getSecretaryDashboardData($user, $groups),
-      default => $this->getMemberDashboardData($user, $groups)
-    };
-  }
-
-  protected function determineProminentRole($userGroupRoles)
-  {
-    $rolePriority = [
-      'admin' => 4,
-      'treasurer' => 3,
-      'secretary' => 2,
-      'member' => 1
-    ];
-
-    return $userGroupRoles->max(function ($role) use ($rolePriority) {
-      return $rolePriority[$role] ?? 0;
-    });
-  }
-
-  protected function getGroupAdminDashboardData(User $user, $groups)
-  {
-    return [
-      'managedGroups' => $groups->filter(function ($group) use ($user) {
-        return $group->members->first()->role === 'admin';
-      })->map(function ($group) {
-        return [
-          'id' => $group->id,
-          'name' => $group->name,
-          'pendingMembers' => $group->members()->where('group_members.status', 'pending')->count(),
-          'pendingLoans' => $group->loans()
-            ->join('group_members as gm', 'loans.group_member_id', '=', 'gm.id')
-            ->where('gm.group_id', $group->id)
-            ->where('loans.status', 'pending')
-            ->count(),
-          'pendingContributions' => $group->contributions()
-            ->join('group_members as gm', 'contributions.group_member_id', '=', 'gm.id')
-            ->where('gm.group_id', $group->id)
-            ->where('contributions.status', 'pending')
-            ->count(),
-        ];
-      }),
-      'totalManagedGroups' => $groups->filter(function ($group) use ($user) {
-        return $group->members->first()->role === 'admin';
-      })->count()
-    ];
-  }
-
-  protected function getTreasurerDashboardData(User $user, $groups)
-  {
-    return [
-      'financialOverview' => $groups->map(function ($group) {
-        return [
-          'groupName' => $group->name,
-          'totalContributions' => $group->contributions()->sum('amount'),
-          'totalLoans' => $group->loans()->sum('total_amount'),
-          'availableBalance' => $group->contributions()->sum('amount') - $group->loans()->sum('total_amount')
-        ];
-      }),
-      'upcomingFinancialActivities' => $this->getUpcomingFinancialActivities($groups)
-    ];
-  }
-
-  protected function getSecretaryDashboardData(User $user, $groups)
-  {
-    return [
-      'groupManagement' => $groups->map(function ($group) {
-        return [
-          'groupName' => $group->name,
-          'pendingInvitations' => $group->invitations()->where('status', 'pending')->count(),
-          'upcomingMeetings' => $group->meetings()->upcoming()->get()
-        ];
-      }),
-      'communicationTasks' => $this->getCommunicationTasks($groups)
-    ];
-  }
-
-  protected function getMemberDashboardData(User $user, $groups)
-  {
-    return [
-      'personalContributions' => $groups->map(function ($group) use ($user) {
-        $memberContributions = $group->contributions()
-          ->whereHas('groupMember', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-          });
-
-        return [
-          'groupName' => $group->name,
-          'totalContributed' => $memberContributions->sum('amount'),
-          'contributionCount' => $memberContributions->count()
-        ];
-      }),
-      'loanStatus' => $this->getUserLoanStatus($user, $groups)
-    ];
-  }
-
-  protected function getUpcomingFinancialActivities($groups)
-  {
-    // Implement logic to fetch upcoming financial activities
-    return $groups->flatMap(function ($group) {
-      return [
-        'pendingLoans' => $group->loans()->where('status', 'pending')->get(),
-        'upcomingContributions' => $group->contributions()->upcoming()->get()
-      ];
-    });
-  }
-
-  protected function getCommunicationTasks($groups)
-  {
-    // Implement communication-related tasks for secretary
-    return $groups->flatMap(function ($group) {
-      return [
-        'pendingInvitations' => $group->invitations()->where('status', 'pending')->get(),
-        'upcomingMeetings' => $group->meetings()->upcoming()->get()
-      ];
-    });
-  }
-
-  protected function getUserLoanStatus(User $user, $groups)
-  {
-    return $groups->map(function ($group) use ($user) {
-      $activeLoan = $group->loans()
-        ->whereHas('groupMember', function ($query) use ($user) {
-          $query->where('user_id', $user->id);
-        })
-        ->where('loans.status', 'active')
-        ->first();
-
-      return [
-        'groupName' => $group->name,
-        'hasActiveLoan' => $activeLoan !== null,
-        'loanDetails' => $activeLoan ? [
-          'amount' => $activeLoan->total_amount,
-          'remainingBalance' => $activeLoan->remaining_balance,
-          'status' => $activeLoan->status
-        ] : null
-      ];
-    });
-  }
-
-  // from here down, keep checking
 
   /**
    * Get dashboard statistics for the user

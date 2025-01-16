@@ -24,6 +24,8 @@ return new class extends Migration {
         ->nullOnDelete();
 
       $table->enum('type', [
+        'invitation_accepted',
+        'invitation_declined',
         'member_joined',
         'member_left',
         'member_invited',

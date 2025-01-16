@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\BootUuid;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -77,11 +78,13 @@ class User extends Authenticatable implements HasMedia /*implements MustVerifyEm
   }
 
   // Convenience method to get avatar URL
-  public function getAvatarAttribute()
+  public function avatar(): Attribute
   {
-    return $this->getFirstMediaUrl('avatar', 'thumb')
-      ?: $this->getFirstMediaUrl('avatar')
-        ?: url($this->defaultAvatar($this->gendeer));
+    return Attribute::get(
+      fn() => $this->getFirstMediaUrl('avatar', 'thumb')
+        ?: $this->getFirstMediaUrl('avatar')
+        ?: url($this->defaultAvatar($this->gendeer))
+    );
   }
 
   private function defaultAvatar(string $gender = null)

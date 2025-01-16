@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import {type Component} from "vue";
+import {Badge} from "@/Components/ui/badge"
 
 const props = defineProps<{
   href: string
@@ -14,31 +15,42 @@ const props = defineProps<{
   <li>
     <Link
       :href="href"
-      :class="[
-        'flex items-center p-2 text-base font-normal rounded-lg group',
-        $page.url.startsWith(href)
-          ? 'bg-primary-100 text-primary-600 dark:bg-primary-700 dark:text-primary-200'
-          : 'text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700'
-      ]">
+      class="flex items-center p-2 text-base font-normal rounded-lg group transition-colors duration-200"
+      :class="{
+        'bg-accent text-accent-foreground': $page.url.startsWith(href),
+        'hover:bg-accent/50 text-foreground hover:text-accent-foreground': !$page.url.startsWith(href)
+      }"
+    >
       <component
         v-if="icon"
         :is="icon"
-        :class="[
-          'w-5 h-5 transition duration-75',
-          $page.url.startsWith(href)
-            ? 'text-primary-600 dark:text-primary-200'
-            : 'text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white'
-        ]"
+        class="w-5 h-5 transition-colors duration-200"
+        :class="{
+          'text-accent-foreground': $page.url.startsWith(href),
+          'text-muted-foreground group-hover:text-accent-foreground': !$page.url.startsWith(href)
+        }"
       />
 
-      <span class="ml-3">{{ label }}</span>
+      <span class="ml-3 flex-1">{{ label }}</span>
 
-      <span
+      <Badge
         v-if="badge"
-        class="inline-flex items-center justify-center w-5 h-5 ml-auto text-xs font-medium text-primary-600 bg-primary-100 rounded-full"
+        variant="secondary"
+        class="ml-auto"
       >
         {{ badge }}
-      </span>
+      </Badge>
     </Link>
   </li>
 </template>
+
+<style scoped>
+/* Additional theme-specific styling for hover and active states */
+.group:hover {
+  @apply bg-accent/50 text-accent-foreground;
+}
+
+.group:hover .icon {
+  @apply text-accent-foreground;
+}
+</style>

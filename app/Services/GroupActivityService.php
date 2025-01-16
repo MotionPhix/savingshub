@@ -129,7 +129,7 @@ class GroupActivityService
     array $filterTypes = []
   ) {
     $query = $group->activities()
-      ->with(['user:id,name,avatar'])
+      ->with(['user:id,name'])
       ->latest();
 
     // Apply type filtering if specified

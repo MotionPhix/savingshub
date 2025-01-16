@@ -62,6 +62,19 @@ class GroupPolicy
     return $membership && in_array($membership->role, ['admin', 'secretary']);
   }
 
+  public function assign(User $user, Group $group, string $role = 'member'): bool
+  {
+    // Check if user can assign member roles
+    $membership = $group->members()->where('user_id', $user->id)->first();
+
+    if ($role !== 'member') {
+      // If member invites are allowed, check user's role
+      return $membership && in_array($membership->role, ['admin', 'secretary']);
+    }
+
+    return (bool)$membership;
+  }
+
   public function removeMember(User $user, Group $group, User $targetUser): bool
   {
     $userMembership = $group->members()->where('user_id', $user->id)->first();

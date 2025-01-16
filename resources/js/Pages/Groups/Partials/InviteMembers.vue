@@ -107,7 +107,8 @@ const sendInvitations = () => {
   <GlobalModal
     max-width="md"
     padding-classes="0"
-    v-slot="{ close }">
+    v-slot="{ close }"
+    :close-explicitly="true">
     <form @submit.prevent="sendInvitations">
       <Card>
         <CardHeader>

@@ -60,15 +60,22 @@ watch(
 </script>
 
 <template>
-  <Toaster position="bottom-left" class="z-50" :expand="true" richColors/>
+  <Toaster
+    position="bottom-left"
+    class="z-50"
+    :expand="true"
+    richColors
+  />
 
-  <div class="h-screen bg-gray-50 dark:bg-gray-900 w-screen overflow-hidden">
+  <div class="h-screen bg-background text-foreground w-screen overflow-hidden">
     <SiteHeader>
       <template #toggle-menu>
         <Button
           size="icon"
           variant="ghost"
-          @click="toggleSidebar">
+          @click="toggleSidebar"
+          class="text-foreground hover:bg-accent hover:text-accent-foreground"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" width="24" height="24"
                fill="none">
             <path d="M4 5L16 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -86,7 +93,7 @@ watch(
       <!-- Sidebar for Desktop -->
       <Sidebar
         v-if="!isMobile"
-        class="w-64 shrink-0 border-r border-gray-200 dark:border-gray-800"
+        class="w-64 shrink-0 border-r border-border bg-muted/50"
       />
 
       <!-- Mobile Sidebar (Overlay) -->
@@ -95,13 +102,13 @@ watch(
         class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
         @click="isSidebarOpen = false">
         <Sidebar
-          class="w-64 mt-14 max-w-[80%] h-full bg-white dark:bg-gray-900 shadow-lg transform translate-x-0 transition-transform duration-300"
+          class="w-64 mt-14 max-w-[80%] h-full bg-background shadow-lg transform translate-x-0 transition-transform duration-300 border-r border-border"
         />
       </div>
 
       <!-- Main Content Area -->
       <main
-        class="flex-1 overflow-y-auto p-6 transition-all duration-300 ease-in-out"
+        class="flex-1 overflow-y-auto p-6 transition-all duration-300 ease-in-out bg-background"
         :class="{
           'lg:ml-64': !isMobile,
           'w-full': isMobile
@@ -123,3 +130,29 @@ watch(
     </div>
   </div>
 </template>
+
+<style>
+/* Custom scrollbar to match theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Ensure full theme compatibility */
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+</style>

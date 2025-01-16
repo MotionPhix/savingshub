@@ -448,7 +448,7 @@ class GroupController extends Controller implements HasMiddleware
         'in:member,treasurer,secretary',
         function ($attribute, $value, $fail) use ($group) {
           // Additional role-based authorization check
-          if (!auth()->user()->can('assign-' . $value, $group)) {
+          if (!auth()->user()->can('assign', [$group, $value])) {
             $fail('You are not authorized to assign this role.');
           }
         }
@@ -489,7 +489,7 @@ class GroupController extends Controller implements HasMiddleware
       DB::commit();
 
       return back()
-        ->with('flush', $responses)
+//        ->with('flush', $responses)
         ->with('flush', 'Invitations sent successfully.');
 
     } catch (\Exception $e) {

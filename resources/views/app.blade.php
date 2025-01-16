@@ -18,5 +18,7 @@
 </head>
 <body class="font-sans antialiased w-screen h-screen">
 @inertia
+
+<x-responsive-helper />
 </body>
 </html>

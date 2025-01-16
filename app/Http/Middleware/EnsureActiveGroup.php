@@ -17,6 +17,7 @@ class EnsureActiveGroup
     'groups.set.active',
     'groups.store',
     'groups.invite.accept',
+    'groups.invite.decline',
     'groups.invite.send',
     'profile.index',
     'profile.avatar.destroy',

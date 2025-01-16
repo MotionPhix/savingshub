@@ -11,9 +11,9 @@ import FinancialInsights from "./Partials/FinancialInsights.vue"
 import ContributionChart from "./Partials/ContributionChart.vue"
 import LoanAnalytics from "./Partials/LoanAnalytics.vue"
 import GroupOverview from "@/Pages/Groups/Partials/GroupOverview.vue"
-import {Separator} from "@/Components/ui/separator"
 import {formatCurrency} from "@/lib/formatters"
 import { visitModal } from '@inertiaui/modal-vue'
+import PageHeader from "@/Components/PageHeader.vue";
 
 // Props definition
 const props = withDefaults(
@@ -85,15 +85,15 @@ const inviteMembers = () => {
 
     <div class="mx-auto sm:px-4 py-8">
       <!-- Group Header -->
-      <div class="flex flex-col sm:flex-row gap-y-4 sm:justify-between sm:items-center mb-6">
-        <div>
-          <h1 class="text-3xl font-bold">{{ group.name }}</h1>
-          <p class="text-muted-foreground">{{ group.description }}</p>
-        </div>
+      <PageHeader :separate="true">
+        {{ group.name }}
 
-        <Separator class="sm:hidden"/>
+         <template #description>
+           {{ group.description }}
+         </template>
 
-        <div class="flex space-x-2">
+        <template #action>
+
           <Button
             v-if="canManageGroup"
             @click="editGroup"
@@ -106,8 +106,9 @@ const inviteMembers = () => {
             @click="inviteMembers">
             Invite Members
           </Button>
-        </div>
-      </div>
+
+        </template>
+      </PageHeader>
 
       <!-- Group Summary Cards -->
       <div class="grid md:grid-cols-4 gap-4 mb-6">
