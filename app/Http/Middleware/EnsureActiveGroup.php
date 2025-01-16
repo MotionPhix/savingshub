@@ -11,7 +11,6 @@ use Inertia\Inertia;
 class EnsureActiveGroup
 {
   protected $excludedRoutes = [
-    'dashboard',
     'groups.index',
     'groups.store',
     'groups.set.active',

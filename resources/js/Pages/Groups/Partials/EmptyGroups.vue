@@ -15,33 +15,36 @@ import {router} from "@inertiajs/vue3";
     </h3>
 
     <p
-      class="empty-description max-w-sm mx-auto">
+      class="empty-description max-w-md mx-auto">
       It looks like you haven't joined any savings groups yet.
       Create or join a group today!
     </p>
 
-    <Button
-      @click="router.get(route('groups.create'))">
-      Create Group
-    </Button>
+    <div class="flex gap-2 w-full justify-center">
+      <Button
+        @click="router.get(route('groups.create'))">
+        Create Group
+      </Button>
 
-    <Button
-      class="ml-4"
-      variant="secondary">
-      Discover Groups
-    </Button>
+      <Button
+        variant="secondary">
+        Discover Groups
+      </Button>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .empty-state {
   text-align: center;
-  padding: 40px;
+  padding: 30px;
 }
+
 .empty-title {
   font-size: 1.5rem;
   font-weight: bold;
 }
+
 .empty-description {
   color: gray;
   margin-bottom: 20px;

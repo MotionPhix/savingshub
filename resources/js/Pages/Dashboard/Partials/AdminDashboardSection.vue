@@ -1,53 +1,60 @@
 <template>
   <Card>
     <CardHeader>
-      <CardTitle>Managed Groups Overview</CardTitle>
-      <CardDescription>Groups you administrate ({{ totalManagedGroups }})</CardDescription>
+      <CardTitle>
+        Managed Groups Overview
+      </CardTitle>
+
+      <CardDescription>
+        Groups you administrate ({{ totalManagedGroups }})
+      </CardDescription>
     </CardHeader>
+
     <CardContent>
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card
           v-for="group in managedGroups"
           :key="group.id"
-          class="hover:shadow-lg transition-shadow"
-        >
+          class="hover:shadow-lg transition-shadow">
+
           <CardHeader>
             <CardTitle>{{ group.name }}</CardTitle>
           </CardHeader>
+
           <CardContent>
             <div class="space-y-2">
               <div class="flex justify-between items-center">
                 <span>Pending Members</span>
                 <Badge
-                  :variant="group.pendingMembers > 0 ? 'destructive' : 'secondary'"
-                >
+                  :variant="group.pendingMembers > 0 ? 'destructive' : 'secondary'">
                   {{ group.pendingMembers }}
                 </Badge>
               </div>
+
               <div class="flex justify-between items-center">
                 <span>Pending Loans</span>
+
                 <Badge
-                  :variant="group.pendingLoans > 0 ? 'destructive' : 'secondary'"
-                >
+                  :variant="group.pendingLoans > 0 ? 'destructive' : 'secondary'">
                   {{ group.pendingLoans }}
                 </Badge>
               </div>
+
               <div class="flex justify-between items-center">
                 <span>Pending Contributions</span>
                 <Badge
-                  :variant="group.pendingContributions > 0 ? 'destructive' : 'secondary'"
-                >
+                  :variant="group.pendingContributions > 0 ? 'destructive' : 'secondary'">
                   {{ group.pendingContributions }}
                 </Badge>
               </div>
             </div>
           </CardContent>
+
           <CardFooter>
             <Button
               variant="outline"
               class="w-full"
-              @click="manageGroup(group.id)"
-            >
+              @click="manageGroup(group.id)">
               Manage Group
             </Button>
           </CardFooter>

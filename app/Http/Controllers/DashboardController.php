@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -12,7 +13,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
-class DashboardController extends Controller
+class DashboardController extends Controller implements HasMiddleware
 {
   /**
    * Get the middleware that should be assigned to the controller.
@@ -20,7 +21,7 @@ class DashboardController extends Controller
   public static function middleware(): array
   {
     return [
-      new Middleware('permission:view dashboard'),
+      new Middleware('active.group'),
     ];
   }
 

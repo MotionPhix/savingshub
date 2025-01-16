@@ -88,10 +88,6 @@ Route::middleware(['auth', 'verified', 'group.currency'])->group(function () {
   )->name('logout');
 
   // Unrestricted Routes (Dashboard and Profile)
-  Route::get(
-    '/',
-    [DashboardController::class, 'index']
-  )->name('dashboard');
 
   // Auth user profile management
   Route::prefix('profile')->group(function () {
@@ -120,6 +116,11 @@ Route::middleware(['auth', 'verified', 'group.currency'])->group(function () {
 
   // Group Routes (Requires active group middleware)
   Route::middleware('active.group')->group(function () {
+
+    Route::get(
+      '/',
+      [DashboardController::class, 'index']
+    )->name('dashboard');
 
     // groups
     Route::prefix('groups')->name('groups.')->group(function () {

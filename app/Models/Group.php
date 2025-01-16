@@ -62,6 +62,55 @@ class Group extends Model
     'pending_invitations_count'
   ];
 
+  // Mutator to ensure proper formatting of interest tiers
+  public function setInterestTiersAttribute($value)
+  {
+    // Ensure tiers are sorted and formatted consistently
+    if (is_array($value)) {
+      usort($value, function ($a, $b) {
+        return $a['min_amount'] <=> $b['min_amount'];
+      });
+    }
+
+    $this->attributes['interest_tiers'] = json_encode($value);
+  }
+
+  // Accessor to return formatted tiers
+  public function getInterestTiersAttribute($value)
+  {
+    return $value ? json_decode($value, true) : [];
+  }
+
+  // Method to calculate interest based on tiered rates
+  public function calculateTieredInterest(float $loanAmount)
+  {
+    if ($this->loan_interest_type !== 'tiered' || empty($this->interest_tiers)) {
+      return $this->base_interest_rate * $loanAmount;
+    }
+
+    $totalInterest = 0;
+    foreach ($this->interest_tiers as $tier) {
+      // Calculate interest for the portion of loan in this tier
+      $tierStart = $tier['min_amount'];
+      $tierEnd = $tier['max_amount'];
+      $tierRate = $tier['rate'] / 100;
+
+      // Determine the amount in this tier
+      $tierAmount = min($loanAmount, $tierEnd) - $tierStart;
+
+      if ($tierAmount > 0) {
+        $totalInterest += $tierAmount * $tierRate;
+      }
+
+      // Move to next tier if loan amount exceeds current tier
+      if ($loanAmount <= $tierEnd) {
+        break;
+      }
+    }
+
+    return $totalInterest;
+  }
+
   // Boot method for automatic slug generation
   protected static function boot()
   {

@@ -22,6 +22,7 @@ import SecretaryDashboardSection from './Partials/SecretaryDashboardSection.vue'
 import MemberDashboardSection from './Partials/MemberDashboardSection.vue'
 import {toast} from "vue-sonner";
 import PageHeader from "@/Components/PageHeader.vue";
+import {formatCurrency} from "@/lib/formatters";
 
 const props = withDefaults(
   defineProps<{
@@ -56,16 +57,8 @@ const isSuperAdmin = computed(() =>
 
 const getDashboardSubtitle = computed(() => {
   if (isSuperAdmin.value) return 'System-wide Overview'
-  return `You're viewing this as a ${props.activeGroupRole}`
+  return `You're viewing this as a${props.activeGroupRole === 'admin' ? 'n' : ''} ${props.activeGroupRole}`
 })
-
-// Utility Methods
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: props.user?.currency || 'MWK'
-  }).format(amount)
-}
 
 const formatRelativeDate = (date) => {
   const now = new Date()
@@ -183,7 +176,7 @@ onMounted(() => {
       <div class="mx-auto sm:px-4 py-8 space-y-8">
         <!-- Dashboard Header -->
         <PageHeader>
-          Welcome, {{ user.name }}
+          Welcome, <br />{{ user.name }}
 
           <template #description>
             {{ getDashboardSubtitle }}

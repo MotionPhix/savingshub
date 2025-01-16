@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {router, useForm} from '@inertiajs/vue3'
+import {useForm} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import FormField from '@/Components/Forms/FormField.vue'
 import {Button} from "@/Components/ui/button/index.js";
@@ -57,14 +57,14 @@ function calculateEndDate() {
 
 const formattedStartDate = computed(() => {
   return form.start_date
-    ? format(new Date(form.start_date), 'PPPP')
+    ? format(new Date(form.start_date), 'PPP')
     : 'Pick a date'
 })
 
 const formattedEndDate = computed(() => {
   return form.end_date
-    ? format(new Date(form.end_date), 'PPPP')
-    : 'Based on start date and duration'
+    ? format(new Date(form.end_date), 'PPP')
+    : 'Based on start date'
 })
 
 const minLoanDuration = computed(() => {
@@ -89,9 +89,6 @@ const submitForm = () => {
 
       // Show success notification
       toast.success('Group created successfully!')
-
-      // Redirect to the newly created group's dashboard
-      router.visit(route('groups.dashboard', response.group.id))
     },
     onError: (errors) => {
 
@@ -396,8 +393,8 @@ watch(() => form.duration_months, calculateEndDate);
               <div
                 v-for="(tier, index) in interestTiers"
                 :key="index"
-                class="grid grid-cols-1 sm:grid-cols-5 gap-4 items-center">
-                <div class="sm:col-span-2">
+                class="flex gap-y-4 sm:gap-x-4 items-center sm:flex-row flex-col">
+                <div class="sm:flex-1 w-full">
                   <FormField
                     type="number"
                     label="Min Amount"
@@ -407,7 +404,7 @@ watch(() => form.duration_months, calculateEndDate);
                   />
                 </div>
 
-                <div class="sm:col-span-2">
+                <div class="sm:flex-1 w-full">
                   <FormField
                     type="number"
                     label="Max Amount"
@@ -417,7 +414,7 @@ watch(() => form.duration_months, calculateEndDate);
                   />
                 </div>
 
-                <div>
+                <div class="sm:shrink-0 sm:max-w-32 w-full">
                   <FormField
                     type="number"
                     label="Interest Rate (%)"

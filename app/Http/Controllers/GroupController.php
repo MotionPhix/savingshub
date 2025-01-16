@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateGroupRequest;
 use App\Http\Requests\GroupSettingsRequest;
 use App\Models\Group;
 use App\Models\GroupInvitation;
@@ -328,7 +329,7 @@ class GroupController extends Controller implements HasMiddleware
       ->get();
   }
 
-  public function store(Request $request): RedirectResponse
+  public function store(CreateGroupRequest $request): RedirectResponse
   {
     // Validate group creation
     $validatedData = $request->validate([

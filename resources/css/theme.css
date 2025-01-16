@@ -1,67 +1,67 @@
 @layer base {
   :root {
-    /* Light Mode Palette - Same as previous */
-    --background: 330 85% 95%; /* Very soft, light lavender background */
-    --foreground: 320 80% 20%; /* #4E0D3A - Deep purple text */
+    /* Light Mode Palette */
+    --background: 192 15% 92%; /* #ECF0F1 - Light gray background */
+    --foreground: 210 29% 24%; /* #2C3E50 - Dark blue-gray text */
 
-    --muted: 320 50% 90%; /* Soft, light purple muted background */
-    --muted-foreground: 320 80% 30%; /* Slightly lighter deep purple */
+    --muted: 210 14% 85%; /* Soft, muted blue-gray */
+    --muted-foreground: 210 29% 34%; /* Slightly darker blue-gray */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 320 80% 20%;
+    --popover: 0 0% 100%; /* White popover */
+    --popover-foreground: 210 29% 24%; /* Dark text on popover */
 
-    --card: 0 0% 100%;
-    --card-foreground: 320 80% 20%;
+    --card: 0 0% 100%; /* White card background */
+    --card-foreground: 210 29% 24%; /* Dark text on card */
 
-    --border: 320 50% 85%;
-    --input: 320 50% 90%; /* Soft purple-tinted input */
+    --border: 210 14% 75%; /* Light blue-gray border */
+    --input: 210 14% 85%; /* Soft blue-gray input background */
 
-    --primary: 320 80% 20%; /* #4E0D3A - Deep purple primary */
-    --primary-foreground: 330 85% 95%; /* Very soft lavender text on primary */
+    --primary: 145 63% 41%; /* #27AE60 - Green primary */
+    --primary-foreground: 192 15% 92%; /* Light text on primary */
 
-    --secondary: 325 95% 25%; /* #5D1049 - Rich deep purple secondary */
-    --secondary-foreground: 330 85% 95%; /* Very soft lavender text on secondary */
+    --secondary: 48 89% 50%; /* #F1C40F - Yellow secondary */
+    --secondary-foreground: 210 29% 24%; /* Dark text on secondary */
 
-    --accent: 345 95% 45%; /* #E30425 - Vibrant red accent */
-    --accent-foreground: 330 85% 95%; /* Very soft lavender text on accent */
+    --accent: 210 14% 43%; /* #5D6D7E - Blue-gray accent */
+    --accent-foreground: 192 15% 92%; /* Light text on accent */
 
-    --destructive: 345 95% 45%; /* #E30425 - Vibrant red for destructive */
+    --destructive: 0 85% 45%; /* Vibrant red for destructive */
     --destructive-foreground: 0 0% 98%; /* White text on destructive */
 
-    --ring: 320 80% 20%; /* Deep purple ring */
+    --ring: 145 63% 41%; /* Green ring */
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Refined Dark Mode Palette */
-    --background: 320 30% 15%; /* Softer, less saturated dark purple */
-    --foreground: 330 85% 95%; /* Very soft lavender text */
+    /* Dark Mode Palette */
+    --background: 210 29% 14%; /* Darker blue-gray background */
+    --foreground: 192 15% 92%; /* Light gray text */
 
-    --muted: 320 20% 20%; /* Slightly more neutral, less saturated */
-    --muted-foreground: 330 85% 85%; /* Softer lavender muted text */
+    --muted: 210 14% 20%; /* Muted dark blue-gray */
+    --muted-foreground: 192 15% 85%; /* Soft light text */
 
-    --popover: 320 25% 18%; /* Less intense purple popover */
-    --popover-foreground: 330 85% 95%;
+    --popover: 210 29% 18%; /* Dark popover */
+    --popover-foreground: 192 15% 92%; /* Light text on popover */
 
-    --card: 320 20% 16%; /* Neutral dark tone for cards */
-    --card-foreground: 330 85% 95%;
+    --card: 210 29% 16%; /* Darker card background */
+    --card-foreground: 192 15% 92%; /* Light text on card */
 
-    --border: 320 25% 30%; /* Slightly lighter border */
-    --input: 320 25% 25%; /* Neutral dark input */
+    --border: 210 14% 30%; /* Dark border */
+    --input: 210 14% 25%; /* Dark input background */
 
-    --primary: 345 95% 45%; /* #E30425 - Vibrant red primary */
-    --primary-foreground: 330 85% 95%; /* Soft lavender text on primary */
+    --primary: 145 63% 41%; /* Green primary */
+    --primary-foreground: 192 15% 92%; /* Light text on primary */
 
-    --secondary: 345 80% 35%; /* Muted, less intense red secondary */
-    --secondary-foreground: 330 85% 95%; /* Soft lavender text on secondary */
+    --secondary: 48 89% 50%; /* Yellow secondary */
+    --secondary-foreground: 210 29% 14%; /* Dark text on secondary */
 
-    --accent: 330 85% 95%; /* Soft lavender accent */
-    --accent-foreground: 320 80% 20%; /* Deep purple text on accent */
+    --accent: 210 14% 43%; /* Blue-gray accent */
+    --accent-foreground: 192 15% 92%; /* Light text on accent */
 
-    --destructive: 345 80% 35%; /* Muted red for destructive */
+    --destructive: 0 85% 45%; /* Vibrant red for destructive */
     --destructive-foreground: 0 0% 98%; /* White text on destructive */
 
-    --ring: 345 95% 45%; /* Vibrant red ring */
+    --ring: 145 63% 41%; /* Green ring */
   }
 }
 
