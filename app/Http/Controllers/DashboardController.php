@@ -59,6 +59,10 @@ class DashboardController extends Controller
       'user' => $user,
       'groups' => $groups,
       'userGroupRoles' => $userGroupRoles,
+      'activeGroupRole' => fn() => Group::findOrFail(session('active_group_id'))
+        ->members()
+        ->where('user_id', Auth::id())
+        ->value('role') ?? 'member',
       'dashboardData' => $dashboardData,
       'analytics' => $this->getUserAnalytics($user, $groups)
     ]);

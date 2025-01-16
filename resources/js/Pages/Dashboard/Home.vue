@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import {computed, onMounted} from 'vue'
 import {router} from '@inertiajs/vue3'
 import {
@@ -21,38 +21,33 @@ import TreasurerDashboardSection from './Partials/TreasurerDashboardSection.vue'
 import SecretaryDashboardSection from './Partials/SecretaryDashboardSection.vue'
 import MemberDashboardSection from './Partials/MemberDashboardSection.vue'
 import {toast} from "vue-sonner";
+import PageHeader from "@/Components/PageHeader.vue";
 
-const props = defineProps({
-  user: {
-    type: Object,
-    required: true
-  },
-  groups: {
-    type: Array,
-    default: () => []
-  },
-  userGroupRoles: {
-    type: Object,
-    default: () => ({})
-  },
-  dashboardData: {
-    type: Object,
-    default: () => ({})
-  },
-  analytics: {
-    type: Object,
-    default: () => ({
+const props = withDefaults(
+  defineProps<{
+    user: object
+    groups: Array<{}>
+    userGroupRoles: object
+    dashboardData: object
+    analytics: {
+      total_groups: number
+      total_contributions: number
+      total_loans: number
+      recent_activities: Array<{}>
+    }
+    activeGroupRole?: string
+  }>(), {
+    activeGroupRole: 'admin',
+    analytics: () => ({
       total_groups: 0,
       total_contributions: 0,
       total_loans: 0,
       recent_activities: []
     })
-  },
-  activeGroupRole: {
-    type: String,
-    default: 'member'
   }
-})
+)
+
+console.log(props)
 
 // Computed Properties
 const isSuperAdmin = computed(() =>
@@ -185,19 +180,16 @@ onMounted(() => {
 
     <!-- Regular User Dashboard -->
     <template v-else>
-      <div class="mx-auto px-4 py-8 space-y-8">
+      <div class="mx-auto sm:px-4 py-8 space-y-8">
         <!-- Dashboard Header -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8">
-          <div>
-            <h1 class="text-3xl font-bold text-foreground mb-2">
-              Welcome, {{ user.name }}
-            </h1>
-            <p class="text-muted-foreground">
-              {{ getDashboardSubtitle }}
-            </p>
-          </div>
+        <PageHeader>
+          Welcome, {{ user.name }}
 
-          <div class="flex space-x-4 mt-4 md:mt-0">
+          <template #description>
+            {{ getDashboardSubtitle }}
+          </template>
+
+          <template #action>
             <Button variant="default" @click="createGroup">
               <PlusCircleIcon class="mr-2 h-4 w-4"/>
               Create Group
@@ -206,8 +198,30 @@ onMounted(() => {
               <DownloadIcon class="mr-2 h-4 w-4"/>
               Export Report
             </Button>
-          </div>
-        </div>
+          </template>
+        </PageHeader>
+
+        <!--        <div class="flex flex-col md:flex-row justify-between items-center mb-8">-->
+        <!--          <div>-->
+        <!--            <h1 class="text-3xl font-bold text-foreground mb-2">-->
+        <!--              Welcome, {{ user.name }}-->
+        <!--            </h1>-->
+        <!--            <p class="text-muted-foreground">-->
+        <!--              {{ getDashboardSubtitle }}-->
+        <!--            </p>-->
+        <!--          </div>-->
+
+        <!--          <div class="flex space-x-4 mt-4 md:mt-0">-->
+        <!--            <Button variant="default" @click="createGroup">-->
+        <!--              <PlusCircleIcon class="mr-2 h-4 w-4"/>-->
+        <!--              Create Group-->
+        <!--            </Button>-->
+        <!--            <Button variant="outline" @click="exportReport">-->
+        <!--              <DownloadIcon class="mr-2 h-4 w-4"/>-->
+        <!--              Export Report-->
+        <!--            </Button>-->
+        <!--          </div>-->
+        <!--        </div>-->
 
         <!-- Role-Specific Dashboard Sections -->
         <template v-if="activeGroupRole === 'admin'">
