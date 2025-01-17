@@ -39,12 +39,15 @@ class HandleInertiaRequests extends Middleware
       ],
 
       'appName' => env('app_name'),
+
       'currency' => fn() => session('active_group_id')
         ? \App\Models\Group::where('id', session('active_group_id'))
           ->first()->settings['currency'] ?? 'MWK'
         : 'ZAR',
 
       'flush' => session('flush'),
+
+      'current_path' => session('active_group_id'),
 
     ];
   }

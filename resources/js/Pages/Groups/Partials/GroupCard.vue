@@ -1,11 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import {computed} from 'vue'
 import {UsersIcon, WalletIcon} from 'lucide-vue-next'
-import {
-  Avatar
-} from '@/Components/ui/avatar'
-import {AvatarFallback, AvatarImage} from "@/Components/ui/avatar/index.js";
-import {useInitials} from "@/composables/useInitials.ts";
+import { Avatar, AvatarFallback, AvatarImage} from "@/Components/ui/avatar";
+import {useInitials} from "@/composables/useInitials";
+import {formatCurrency} from "@/lib/formatters";
 
 const props = defineProps({
   group: {
@@ -42,16 +40,6 @@ const getRoleClasses = () => {
     default: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
   }
   return roleClasses[role] || roleClasses.default
-}
-
-// Utility methods
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount)
 }
 
 const formatDate = (dateString) => {
@@ -94,7 +82,7 @@ const formatDate = (dateString) => {
 
       <div class="flex items-center space-x-2">
         <WalletIcon class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
-        <span class="text-sm text-gray-600 dark:text-gray-300">
+        <span class="text-sm text-gray-600 dark:text-gray-300 font-figures">
           {{ formatCurrency(group.total_contributions || 0) }}
         </span>
       </div>

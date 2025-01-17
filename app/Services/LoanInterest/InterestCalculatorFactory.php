@@ -6,7 +6,7 @@ use App\Contracts\LoanInterestCalculatorInterface;
 use App\Models\Group;
 use InvalidArgumentException;
 
-class LoanInterestCalculatorFactory
+class InterestCalculatorFactory
 {
   public static function create(Group $group): LoanInterestCalculatorInterface
   {

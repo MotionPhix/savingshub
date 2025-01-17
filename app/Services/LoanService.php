@@ -7,7 +7,7 @@ use App\Models\Loan;
 use App\Models\User;
 use App\Notifications\LoanDefaultNotification;
 use App\Notifications\LoanRequestNotification;
-use App\Services\LoanInterest\LoanInterestCalculatorFactory;
+use App\Services\LoanInterest\InterestCalculatorFactory;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -69,7 +69,7 @@ class LoanService
         ->firstOrFail();
 
       // Calculate loan details
-      $interestCalculator = LoanInterestCalculatorFactory::create($group);
+      $interestCalculator = InterestCalculatorFactory::create($group);
       $interestAmount = $interestCalculator->calculateInterest(
         $group,
         $data['amount'],
@@ -434,7 +434,7 @@ class LoanService
       ($restructureOptions['extended_duration'] ?? 0);
 
     // Recalculate interest and monthly payment
-    $interestCalculator = LoanInterestCalculatorFactory::create($loan->group);
+    $interestCalculator = InterestCalculatorFactory::create($loan->group);
     $newInterestAmount = $interestCalculator->calculateInterest(
       $loan->group,
       $remainingBalance,
