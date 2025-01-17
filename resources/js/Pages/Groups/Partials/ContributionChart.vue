@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import {computed} from 'vue'
 import {
   Card,
   CardContent,
@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow
 } from "@/Components/ui/table"
-import { Badge } from "@/Components/ui/badge"
+import {Badge} from "@/Components/ui/badge"
 import {
   formatCurrency,
   calculatePercentage
@@ -37,10 +37,10 @@ const contributionTrendChartOptions = computed(() => ({
   chart: {
     type: 'area',
     height: 350,
-    toolbar: { show: false },
-    zoom: { enabled: false }
+    toolbar: {show: false},
+    zoom: {enabled: false}
   },
-  dataLabels: { enabled: false },
+  dataLabels: {enabled: false},
   stroke: {
     curve: 'smooth',
     width: 2
@@ -58,10 +58,10 @@ const contributionTrendChartOptions = computed(() => ({
     categories: props.contributionInsights.monthly_contribution_trend?.map(
       item => `${item.year}-${item.month.toString().padStart(2, '0')}`
     ) || [],
-    title: { text: 'Month' }
+    title: {text: 'Month'}
   },
   yaxis: {
-    title: { text: 'Contribution Amount' },
+    title: {text: 'Contribution Amount'},
     labels: {
       formatter: (value) => formatCurrency(value)
     }
@@ -71,7 +71,26 @@ const contributionTrendChartOptions = computed(() => ({
     y: {
       formatter: (value) => formatCurrency(value)
     }
-  }
+  },
+  responsive: [
+    {
+      breakpoint: 640,
+      options: {
+        chart: {
+          height: 250
+        },
+        xaxis: {
+          labels: {
+            rotate: -45,
+            rotateAlways: true,
+            style: {
+              fontSize: '10px'
+            }
+          }
+        }
+      }
+    }
+  ]
 }))
 
 // Contribution Types Series
@@ -84,7 +103,7 @@ const contributionTypesChartOptions = computed(() => ({
   chart: {
     type: 'pie',
     height: 350,
-    toolbar: { show: false }
+    toolbar: {show: false}
   },
   colors: [
     '#4CAF50', // Green
@@ -96,7 +115,26 @@ const contributionTypesChartOptions = computed(() => ({
     y: {
       formatter: (value) => formatCurrency(value)
     }
-  }
+  },
+  responsive: [
+    {
+      breakpoint: 640,
+      options: {
+        chart: {
+          height: 250
+        },
+        xaxis: {
+          labels: {
+            rotate: -45,
+            rotateAlways: true,
+            style: {
+              fontSize: '10px'
+            }
+          }
+        }
+      }
+    }
+  ]
 }))
 
 // Contribution Status Breakdown
@@ -117,7 +155,7 @@ const contributionStatusRadialChartOptions = computed(() => ({
   chart: {
     type: 'radialBar',
     height: 350,
-    toolbar: { show: false }
+    toolbar: {show: false}
   },
   plotOptions: {
     radialBar: {
@@ -146,16 +184,21 @@ const contributionStatusRadialChartOptions = computed(() => ({
 // Status Badge Variant
 const getStatusVariant = (status) => {
   switch (status.toLowerCase()) {
-    case 'pending': return 'warning'
-    case 'paid': return 'success'
-    case 'overdue': return 'destructive'
-    default: return 'secondary'
+    case 'pending':
+      return 'warning'
+    case 'paid':
+      return 'success'
+    case 'overdue':
+      return 'destructive'
+    default:
+      return 'secondary'
   }
 }
 </script>
 
 <template>
   <div class="space-y-6">
+    <!-- Mobile-Friendly Grid Layout -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Contribution Trend -->
       <Card>
@@ -167,7 +210,7 @@ const getStatusVariant = (status) => {
             type="area"
             :options="contributionTrendChartOptions"
             :series="contributionTrendSeries"
-            class="w-full h-[350px]"
+            class="w-full h-[250px] md:h-[350px]"
           />
         </CardContent>
       </Card>
@@ -182,7 +225,7 @@ const getStatusVariant = (status) => {
             type="pie"
             :options="contributionTypesChartOptions"
             :series="contributionTypesSeries"
-            class="w-full h-[350px]"
+            class="w-full h-[250px] md:h-[350px]"
           />
         </CardContent>
       </Card>
@@ -193,27 +236,34 @@ const getStatusVariant = (status) => {
           <CardTitle>Contribution Status Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <apexchart
-              type="radialBar"
-              :options="contributionStatusRadialChartOptions"
-              :series="contributionStatusSeries"
-              class="w-full h-[300px]"
-            />
-            <div>
+          <!-- Responsive Flex Container -->
+          <div class="flex flex-col md:flex-row gap-4">
+            <!-- Chart Container -->
+            <div class="w-full md:w-1/2">
+              <apexchart
+                type="radialBar"
+                :options="contributionStatusRadialChartOptions"
+                :series="contributionStatusSeries"
+                class="w-full h-[250px] md:h-[300px]"
+              />
+            </div>
+
+            <!-- Mobile-Friendly Table -->
+            <div class="w-full md:w-1/2 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Count</TableHead>
-                    <TableHead>Total Amount</TableHead>
-                    <TableHead>Percentage</TableHead>
+                    <TableHead class="w-1/4">Status</TableHead>
+                    <TableHead class="w-1/4">Count</TableHead>
+                    <TableHead class="w-1/4">Total</TableHead>
+                    <TableHead class="w-1/4">%</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <TableRow
                     v-for="status in contributionStatusBreakdown"
                     :key="status.status"
+                    class="hover:bg-muted/50 transition-colors"
                   >
                     <TableCell>
                       <Badge :variant="getStatusVariant(status.status)">
@@ -235,14 +285,36 @@ const getStatusVariant = (status) => {
         </CardContent>
       </Card>
     </div>
+
+    <!-- Mobile-Only Summary Cards -->
+    <div class="md:hidden space-y-4">
+      <Card v-for="status in contributionStatusBreakdown" :key="status.status">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">
+            <Badge :variant="getStatusVariant(status.status)">
+              {{ status.status }}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="text-2xl font-bold">
+            {{ formatCurrency(status.total_amount) }}
+          </div>
+          <p class="text-xs text-muted-foreground">
+            {{ status.count }} contributions
+            ({{ calculatePercentage(status.total_amount, totalContributionAmount) }})
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* Responsive adjustments */
+/* Additional responsive tweaks */
 @media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr !important;
+  .apexcharts-canvas {
+    width: 100% !important;
   }
 }
 </style>

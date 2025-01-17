@@ -2,19 +2,20 @@
 import {ref, computed, onMounted} from 'vue'
 import {Head, router, usePage} from '@inertiajs/vue3'
 import AppLayout from "@/Layouts/AppLayout.vue"
-import { Card, CardContent } from "@/Components/ui/card"
+import {Card, CardContent} from "@/Components/ui/card"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/Components/ui/tabs"
 import {Button} from "@/Components/ui/button"
-import {ActivityIcon} from "lucide-vue-next"
+import {ActivityIcon, CreditCardIcon, HomeIcon, SettingsIcon, UsersIcon, WalletIcon} from "lucide-vue-next"
 import MemberList from "./Partials/MemberList.vue"
 import FinancialInsights from "./Partials/FinancialInsights.vue"
 import ContributionChart from "./Partials/ContributionChart.vue"
 import LoanAnalytics from "./Partials/LoanAnalytics.vue"
 import GroupOverview from "@/Pages/Groups/Partials/GroupOverview.vue"
 import {formatCurrency} from "@/lib/formatters"
-import { visitModal } from '@inertiaui/modal-vue'
+import {visitModal} from '@inertiaui/modal-vue'
 import PageHeader from "@/Components/PageHeader.vue";
 import {useTabPersistence} from "@/composables/useTabPersistence";
+import Tabler from "@/Components/Tabler.vue";
 
 // Props definition
 const props = withDefaults(
@@ -57,7 +58,7 @@ const props = withDefaults(
 )
 
 // Active tab management
-const { activeTab, handleTabChange } = useTabPersistence()
+const {activeTab, handleTabChange} = useTabPersistence()
 const currency = usePage().props.currency
 
 // Computed properties for quick access
@@ -84,14 +85,14 @@ const inviteMembers = () => {
   <AppLayout>
     <Head :title="group.name"/>
 
-    <div class="mx-auto sm:px-4 py-8">
+    <div class="mx-auto py-8">
       <!-- Group Header -->
       <PageHeader :separate="true">
         {{ group.name }}
 
-         <template #description>
-           {{ group.description }}
-         </template>
+        <template #description>
+          {{ group.description }}
+        </template>
 
         <template #action>
 
@@ -112,12 +113,12 @@ const inviteMembers = () => {
       </PageHeader>
 
       <!-- Group Summary Cards -->
-      <div class="grid md:grid-cols-4 gap-4 mb-6">
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent class="flex items-center justify-between pt-6">
             <div>
               <h3 class="text-sm font-medium text-muted-foreground">Total Members</h3>
-              <p class="text-2xl font-bold">{{ totalMembers }}</p>
+              <p class="text-3xl font-bold font-eczar">{{ totalMembers }}</p>
             </div>
 
             <svg
@@ -141,8 +142,8 @@ const inviteMembers = () => {
           <CardContent class="flex items-center justify-between pt-6">
             <div>
               <h3 class="text-sm font-medium text-muted-foreground">Total Contributions</h3>
-              <p class="text-2xl font-bold">
-                {{ formatCurrency(financial_summary.total_contributions || 0, currency) }}
+              <p class="text-3xl font-bold font-eczar">
+                {{ formatCurrency(financial_summary.total_contributions || 0) }}
               </p>
             </div>
 
@@ -170,7 +171,7 @@ const inviteMembers = () => {
           <CardContent class="flex items-center justify-between pt-6">
             <div>
               <h3 class="text-sm font-medium text-muted-foreground">Pending Contributions</h3>
-              <p class="text-2xl font-bold">{{ pendingContributions }}</p>
+              <p class="text-3xl font-bold font-eczar">{{ pendingContributions }}</p>
             </div>
 
             <svg
@@ -190,59 +191,76 @@ const inviteMembers = () => {
           <CardContent class="flex items-center justify-between pt-6">
             <div>
               <h3 class="text-sm font-medium text-muted-foreground">Pending Loans</h3>
-              <p class="text-2xl font-bold">{{ pendingLoans }}</p>
+              <p class="text-3xl font-bold font-eczar">{{ pendingLoans }}</p>
             </div>
             <ActivityIcon class="h-6 w-6 text-muted-foreground"/>
           </CardContent>
         </Card>
       </div>
 
-      <!-- Tabs Navigation -->
-      <Tabs v-model="activeTab" class="w-full" @change="handleTabChange(activeTab)">
-        <TabsList class="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="financial">Financial</TabsTrigger>
-          <TabsTrigger value="contributions">Contributions</TabsTrigger>
-          <TabsTrigger value="loans">Loans</TabsTrigger>
-        </TabsList>
+      <Tabler
+        :tabs="[
+          {
+            value: 'overview',
+            label: 'Overview',
+            icon: HomeIcon
+          },
+          {
+            value: 'members',
+            label: 'Members',
+            icon: UsersIcon
+          },
+          {
+            value: 'contributions',
+            label: 'Contributions',
+            icon: WalletIcon
+          },
+          {
+            value: 'loans',
+            label: 'Loans',
+            icon: CreditCardIcon
+          },
+          {
+            value: 'settings',
+            label: 'Financial Insights',
+            icon: SettingsIcon
+          }
+        ]"
+        v-model="activeTab"
+        @change="handleTabChange"
+      />
 
-        <!-- Tab Contents -->
-        <TabsContent value="overview">
-          <GroupOverview
-            :group="group"
-            :stats="stats"
-            :recent-activities="recent_activities"
-          />
-        </TabsContent>
+      <!-- Tab Content -->
+      <div class="mt-4 w-full grid grid-cols-1">
+        <GroupOverview
+          v-if="activeTab === 'overview'"
+          :group="group"
+          :stats="stats"
+          :recent-activities="recent_activities"
+        />
 
-        <TabsContent value="members">
-          <MemberList
-            :members="members"
-            :can-manage="canManageGroup"
-          />
-        </TabsContent>
+        <ContributionChart
+          v-else-if="activeTab === 'contributions'"
+          :contribution-insights="contribution_insights"
+        />
 
-        <TabsContent value="financial">
-          <FinancialInsights
-            :summary="financial_summary"
-            :contribution-insights="contribution_insights"
-            :loan-insights="loan_insights"
-          />
-        </TabsContent>
+        <LoanAnalytics
+          :loan-insights="loan_insights"
+          v-else-if="activeTab === 'loans'"
+        />
 
-        <TabsContent value="contributions">
-          <ContributionChart
-            :contribution-insights="contribution_insights"
-          />
-        </TabsContent>
+        <MemberList
+          :members="[...members]"
+          v-else-if="activeTab === 'members'"
+        />
 
-        <TabsContent value="loans">
-          <LoanAnalytics
-            :loan-insights="loan_insights"
-          />
-        </TabsContent>
-      </Tabs>
+        <FinancialInsights
+          v-else-if="activeTab === 'settings'"
+          :summary="financial_summary"
+          :contribution-insights="contribution_insights"
+          :loan-insights="loan_insights"
+        />
+      </div>
     </div>
   </AppLayout>
 </template>

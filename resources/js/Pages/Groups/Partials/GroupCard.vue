@@ -5,7 +5,7 @@ import {
   Avatar
 } from '@/Components/ui/avatar'
 import {AvatarFallback, AvatarImage} from "@/Components/ui/avatar/index.js";
-import {useInitials} from "@/composables/useInitials.js";
+import {useInitials} from "@/composables/useInitials.ts";
 
 const props = defineProps({
   group: {

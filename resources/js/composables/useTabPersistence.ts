@@ -1,7 +1,7 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 
 export function useTabPersistence(
-  defaultTab: string = 'overview',
+  defaultTab: string = 'contributions',
   storageKey: string = 'group_active_tab'
 ) {
   const activeTab = ref(defaultTab)

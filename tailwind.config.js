@@ -63,7 +63,8 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', ...defaultTheme.fontFamily.sans],
-        serif: ['DM Serif Display', ...defaultTheme.fontFamily.serif],
+        headings: ['DM Serif Display', ...defaultTheme.fontFamily.serif],
+        figures: ['Eczar', ...defaultTheme.fontFamily.serif],
       },
       keyframes: {
         'accordion-down': {
@@ -79,6 +80,9 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
+      scrollBehavior: {
+        'smooth': 'smooth'
+      }
     },
   },
 

@@ -11,7 +11,7 @@ defineProps<{
   <!-- Group Header -->
   <div class="flex flex-col sm:flex-row gap-y-4 sm:justify-between sm:items-center mb-6">
     <div>
-      <h1 class="text-3xl font-bold">
+      <h1 class="text-3xl font-bold font-headings">
         <slot />
       </h1>
 

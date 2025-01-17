@@ -6,7 +6,7 @@ import {
 } from "@/Components/ui/avatar";
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
-import { computed } from "vue";
+import { computed, toRaw } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -21,45 +21,54 @@ const props = withDefaults(
 const userStore = useUserStore()
 const { user } = storeToRefs(userStore)
 
-const avatarSize = computed(() => {
-  return `h-${props.size} w-${props.size}`
-})
+// Memoized computed properties to prevent unnecessary recalculations
+const avatarSize = computed(() => `h-${props.size} w-${props.size}`)
 
 const avatarSource = computed(() => {
-  // Priority:
-  // 1. Provided src (for preview)
-  // 2. User's current avatar
-  // 3. Default avatar based on gender
+  // Use toRaw to prevent potential reactivity issues
+  const rawUser = toRaw(user.value)
+
   if (props.src) {
     return props.src
   }
 
-  return user.value.avatar
-    ? user.value.avatar
-    : user.value.gender === 'male'
+  return rawUser.avatar
+    ? rawUser.avatar
+    : rawUser.gender === 'male'
       ? '/default-m-avatar.png'
       : '/default-f-avatar.png'
 })
 
 const avatarAlt = computed(() => {
+  // Use toRaw to prevent potential reactivity issues
+  const rawUser = toRaw(user.value)
+
   if (props.alt) {
     return props.alt
   }
 
-  return user.value.name
+  return rawUser.name
+})
+
+// Simplified background color computation
+const avatarBackgroundClass = computed(() => {
+  return user.value.gender === 'male' || user.value.gender === null
+    ? 'bg-amber-300'
+    : 'bg-blue-600'
 })
 </script>
 
 <template>
   <Avatar
-    :class="
-      user.gender === 'male' || user.gender === null
-      ? `bg-amber-300 ${avatarSize}`
-      : `bg-blue-600 ${avatarSize}`
-    ">
+    :class="[
+      avatarBackgroundClass,
+      avatarSize
+    ]"
+  >
     <AvatarImage
       :src="avatarSource"
-      :alt="avatarAlt"/>
+      :alt="avatarAlt"
+    />
 
     <AvatarFallback>
       {{ fallback }}

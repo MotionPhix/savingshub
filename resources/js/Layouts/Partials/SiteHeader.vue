@@ -55,7 +55,7 @@ onMounted(() => {
             class="flex ml-2 gap-2 md:mr-24 fill-current items-center group">
             <ApplicationLogo class="h-8 w-8 group-hover:scale-105 transition-transform" />
             <span
-              class="font-serif self-center text-xl font-semibold sm:text-2xl whitespace-nowrap text-foreground group-hover:text-primary transition-colors"
+              class="font-headings self-center text-xl font-semibold sm:text-2xl whitespace-nowrap text-foreground group-hover:text-primary transition-colors"
             >
               {{ appName }}
             </span>

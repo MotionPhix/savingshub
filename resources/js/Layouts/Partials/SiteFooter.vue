@@ -17,7 +17,7 @@ const footerLinks = [
       <div class="flex flex-col items-center md:flex-row lg:gap-8 gap-4">
         <Link href="/" class="flex items-center space-x-2">
           <ApplicationLogo class="h-5 w-5 fill-current" />
-          <span class="font-bold text-lg font-serif">
+          <span class="font-bold text-lg font-headings">
             {{ $page.props.appName }}
           </span>
         </Link>
