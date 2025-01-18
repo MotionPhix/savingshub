@@ -26,5 +26,15 @@ class LoanException extends \Exception
   {
     return new static("Invalid operation for loan with status: {$currentStatus}");
   }
+
+  public static function invalidInterestTiers(string $message)
+  {
+    return new static("Interest Tier Error: {$message}");
+  }
+
+  public static function invalidLoanAmount(string $message)
+  {
+    return new static("Invalid Loan Amount: {$message}");
+  }
 }
 

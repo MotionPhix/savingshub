@@ -4,6 +4,8 @@ import GuestLayout from '@/Layouts/GuestLayout.vue';
 import {Head, Link, useForm} from '@inertiajs/vue3';
 import FormField from "@/Components/Forms/FormField.vue";
 import {Button} from "@/Components/ui/button";
+import PageHeader from "@/Components/PageHeader.vue";
+import {Label} from "@/Components/ui/label";
 
 defineProps<{
   canResetPassword: boolean
@@ -52,6 +54,14 @@ const submit = () => {
 
     </div>
 
+    <PageHeader>
+        Login
+
+      <template #description>
+        Enter your email below to login to your account
+      </template>
+    </PageHeader>
+
     <form @submit.prevent="submit">
       <div>
         <FormField
@@ -66,13 +76,23 @@ const submit = () => {
       </div>
 
       <div class="mt-4">
+        <div class="flex items-center">
+          <Label for="password">Password</Label>
+
+          <Link
+            as="button"
+            v-if="canResetPassword"
+            :href="route('password.request')"
+            class="ml-auto inline-block text-sm underline">
+            Forgot your password?
+          </Link>
+        </div>
+
         <FormField
           type="password"
           v-model="form.password"
           :error="form.errors.password"
           placeholder="Enter your password"
-          label="Password"
-          required
         />
       </div>
 
@@ -87,13 +107,12 @@ const submit = () => {
       </div>
 
       <div class="mt-4 flex items-center justify-end">
-        <Link
-          as="button"
-          v-if="canResetPassword"
-          :href="route('password.request')"
-          class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800">
-          Forgot your password?
-        </Link>
+        <div class="text-center text-sm">
+          Don't have an account?
+          <Link as="button" :href="route('register')" class="underline">
+            Sign up
+          </Link>
+        </div>
 
         <Button
           class="ms-4"

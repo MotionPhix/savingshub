@@ -147,8 +147,8 @@ class GroupController extends Controller implements HasMiddleware
     $this->groupService->activateGroup($request, $group);
 
     // Redirect to the group dashboard or return a response
-    return redirect()->intended(route('groups.index'))
-      ->with('success', "You've switched to: {$group->name}");
+    return redirect()->intended(route('groups.show', $group->uuid))
+      ->with('flush', "You've switched to: {$group->name}");
   }
 
   public function show(Group $group)

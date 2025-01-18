@@ -2,7 +2,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle
 } from "@/Components/ui/card"
@@ -22,6 +21,8 @@ import EmptyGroups from "@/Pages/Groups/Partials/EmptyGroups.vue"
 import {router} from "@inertiajs/vue3"
 import {usePluralize} from '@/composables/usePluralize'
 import PageHeader from "@/Components/PageHeader.vue";
+import { visitModal } from '@inertiaui/modal-vue'
+import {Separator} from "@/Components/ui/separator";
 
 const props = withDefaults(defineProps<{
   groups: Array<{
@@ -48,6 +49,12 @@ const viewGroupDetails = (group) => {
 
 const editGroup = (group) => {
   router.visit(route('groups.edit', group.uuid))
+}
+
+const activateGroup = (group) => {
+  router.post(route('groups.set.active', group.uuid), {
+    replace: true
+  })
 }
 
 const groupStatusVariants = {
@@ -88,22 +95,23 @@ const groupStatusVariants = {
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card
           v-for="group in groups"
-          :key="group.uuid"
-          class="hover:shadow-lg transition-shadow">
-          <CardHeader>
+          class="hover:shadow-lg flex flex-col transition-shadow p-3"
+          :key="group.uuid">
+          <CardHeader class="p-0">
+
             <CardTitle class="text-lg flex justify-between items-center">
-                  <span>
-                    {{ group.name }}
-                  </span>
+              <span>
+                {{ group.name }}
+              </span>
 
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="outline" size="icon">
                     <MoreVerticalIcon class="h-4 w-4"/>
                   </Button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" :side-offset="-4">
                   <DropdownMenuItem
                     @click="viewGroupDetails(group)"
                     class="cursor-pointer">
@@ -137,19 +145,43 @@ const groupStatusVariants = {
                       <path d="M14 22L22 22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
                             stroke-linejoin="round"/>
                     </svg>
-                    Edit
+                    Edit Group
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    v-if="$page.props.current_path !== group.id"
+                    @click="activateGroup(group)"
+                    class="cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+                      <path d="M20 10C19.9641 7.52043 19.7801 6.11466 18.8365 5.17157C17.6643 4 15.7776 4 12.0043 4C8.23106 4 6.34442 4 5.17221 5.17157C4 6.34315 4 8.22876 4 12C4 15.7712 4 17.6569 5.17221 18.8284C6.23545 19.8911 7.88646 19.9899 11 19.9991" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M18 19.7143V21M18 19.7143C16.8432 19.7143 15.8241 19.1461 15.2263 18.2833M18 19.7143C19.1568 19.7143 20.1759 19.1461 20.7737 18.2833M18 13.2857C19.1569 13.2857 20.1761 13.854 20.7738 14.7169M18 13.2857C16.8431 13.2857 15.8239 13.854 15.2262 14.7169M18 13.2857V12M22 13.9286L20.7738 14.7169M14.0004 19.0714L15.2263 18.2833M14 13.9286L15.2262 14.7169M21.9996 19.0714L20.7737 18.2833M20.7738 14.7169C21.1273 15.2271 21.3333 15.8403 21.3333 16.5C21.3333 17.1597 21.1272 17.773 20.7737 18.2833M15.2262 14.7169C14.8727 15.2271 14.6667 15.8403 14.6667 16.5C14.6667 17.1597 14.8728 17.773 15.2263 18.2833" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                      <path d="M9.5 2V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M14.5 2V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M9.5 20V22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M4 9.5L2 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M4 14.5L2 14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M22 9.5L20 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M12 8H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Activate
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
             </CardTitle>
+
           </CardHeader>
 
-          <CardContent>
+          <Separator class="my-4" />
+
+          <CardContent class="p-0">
             <p class="text-sm text-muted-foreground mb-4 line-clamp-2">
               {{ group.description || 'No description provided' }}
             </p>
+          </CardContent>
 
+          <span class="flex-1"></span>
+
+          <CardContent class="p-0">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
                 <svg
@@ -172,9 +204,9 @@ const groupStatusVariants = {
 
               <div
                 :class="`
-                      px-2 py-1 capitalize rounded-md text-xs text-center
-                      ${groupStatusVariants[group.status] || groupStatusVariants.inactive}
-                    `">
+                  px-2 py-1 capitalize rounded-md text-xs text-center
+                  ${groupStatusVariants[group.status] || groupStatusVariants.inactive}
+                `">
                 {{ group.status }}
               </div>
             </div>
@@ -184,13 +216,13 @@ const groupStatusVariants = {
               v-if="group.pending_contributions_count > 0 || group.pending_loan_requests_count > 0">
               <div
                 v-if="group.pending_contributions_count > 0"
-                class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full text-center">
+                class="bg-blue-100 text-blue-800 text-xs py-1 rounded-full text-center">
                 {{ group.pending_contributions_count }} Pending Contributions
               </div>
 
               <div
                 v-if="group.pending_loan_requests_count > 0"
-                class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full text-center">
+                class="bg-red-100 text-red-800 text-xs py-1 rounded-full text-center">
                 {{ group.pending_loan_requests_count }} Loan Requests
               </div>
             </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Contribution;
 use App\Models\Group;
+use App\Models\GroupMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -65,7 +66,50 @@ class ContributionController extends Controller
 
   public function create()
   {
-    return Inertia('Contributions/Create');
+    // Get the active group ID from session
+    $activeGroupId = session('active_group_id');
+
+    // Fetch the active group
+    $activeGroup = Group::findOrFail($activeGroupId);
+
+    // Check user's roles in the group
+    $groupMember = GroupMember::where('user_id', Auth::id())
+      ->where('group_id', $activeGroupId)
+      ->first();
+
+    // Determine if user has permission to add contributions
+    $canAddContributions = $groupMember && (($groupMember->role === 'treasurer' || $groupMember->role === 'admin'));
+
+    // Fetch group members for potential contribution assignment
+    $groupMembers = GroupMember::with('user')
+      ->where('group_id', $activeGroupId)
+      ->get()
+      ->map(function ($member) {
+        return [
+          'id' => $member->id,
+          'name' => $member->user->name,
+          'email' => $member->user->email
+        ];
+      });
+
+    // Contribution configuration from group settings
+    $contributionConfig = [
+      'minimum_amount' => $activeGroup->minimum_contribution,
+      'maximum_amount' => $activeGroup->maximum_contribution,
+      'default_amount' => $activeGroup->contribution_amount,
+      'contribution_frequency' => $activeGroup->contribution_frequency
+    ];
+
+    // Additional context for contribution creation
+    $context = [
+      'activeGroup' => $activeGroup,
+      'groupMembers' => $groupMembers,
+      'contributionConfig' => $contributionConfig,
+      'userRoles' => $groupMember ? $groupMember->roles->pluck('name') : [],
+      'canAddContributions' => $canAddContributions
+    ];
+
+    return Inertia('Contributions/Create', $context);
   }
 
   public function store(Request $request)

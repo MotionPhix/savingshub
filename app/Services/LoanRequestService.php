@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Group;
 use App\Models\User;
 use App\Models\Loan;
-use App\Services\LoanInterest\LoanInterestCalculatorFactory;
+use App\Services\LoanInterest\InterestCalculatorFactory;
 use Illuminate\Support\Facades\DB;
 
 class LoanRequestService
@@ -16,7 +16,7 @@ class LoanRequestService
     $this->validateLoanRequest($group, $user, $amount);
 
     // Calculate interest
-    $interestCalculator = LoanInterestCalculatorFactory::create($group);
+    $interestCalculator = InterestCalculatorFactory::create($group);
     $interestAmount = $interestCalculator->calculateInterest($group, $amount, $user);
 
     // Begin transaction

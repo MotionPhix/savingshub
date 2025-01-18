@@ -50,6 +50,7 @@
     "zod": "^3.24.1"
   },
   "dependencies": {
-    "v-calendar": "^3.1.2"
+    "v-calendar": "^3.1.2",
+    "vaul-vue": "^0.2.0"
   }
 }
