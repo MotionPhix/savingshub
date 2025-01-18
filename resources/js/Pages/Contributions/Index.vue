@@ -8,11 +8,21 @@ import {
   CheckCircleIcon,
   AlertCircleIcon
 } from 'lucide-vue-next'
-import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/Components/ui/card";
-import {Button} from "@/Components/ui/button";
-import AppLayout from "@/Layouts/AppLayout.vue";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/Components/ui/table";
-import {Badge} from "@/Components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "@/Components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/Components/ui/table";
 import {
   Select,
   SelectTrigger,
@@ -20,6 +30,16 @@ import {
   SelectContent,
   SelectItem
 } from "@/Components/ui/select";
+import {Badge} from "@/Components/ui/badge";
+import {Button} from "@/Components/ui/button";
+import AppLayout from "@/Layouts/AppLayout.vue";
+
+// Components
+import EmptyState from "@/Pages/Contributions/Partials/EmptyState.vue";
+import ContributionInsightCard from "@/Pages/Contributions/Partials/ContributionInsightCard.vue";
+import ContributionMobileCard from "@/Pages/Contributions/Partials/ContributionMobileCard.vue";
+import EmptyChartState from "@/Pages/Contributions/Partials/EmptyChartState.vue";
+import PageHeader from "@/Components/PageHeader.vue";
 
 const props = defineProps({
   contributions: Object,
@@ -27,35 +47,135 @@ const props = defineProps({
   activeGroup: Object
 })
 
-// Filters state
+const compactInsights = computed(() => [
+  {
+    title: 'Total Contributed',
+    value: formatCurrency(props.contributionInsights.total_contributed),
+    subtitle: `${props.contributionInsights.total_contributions} contributions`,
+    icon: WalletIcon,
+    variant: 'default'
+  },
+  {
+    title: 'Pending',
+    value: formatCurrency(props.contributionInsights.pending_total),
+    subtitle: `${props.contributionInsights.pending_count} pending`,
+    icon: ClockIcon,
+    variant: 'warning'
+  },
+  {
+    title: 'Paid',
+    value: formatCurrency(props.contributionInsights.paid_total),
+    subtitle: `${props.contributionInsights.paid_count} paid`,
+    icon: CheckCircleIcon,
+    variant: 'success'
+  },
+  {
+    title: 'Overdue',
+    value: formatCurrency(props.contributionInsights.overdue_total),
+    subtitle: `${props.contributionInsights.overdue_count} overdue`,
+    icon: AlertCircleIcon,
+    variant: 'destructive'
+  }
+])
+
+// Filters and Pagination
 const filters = ref({
   type: 'all',
   status: 'all',
   page: 1
 })
 
-// Watchers for filters
-watch(filters.value, (newFilters) => {
-  applyFilters()
-})
+// Chart Data Computeds
+const contributionTypeChart = computed(() => ({
+  labels: Object.keys(props.contributionInsights.contribution_types || {}),
+  series: Object.values(props.contributionInsights.contribution_types || {})
+}))
 
-// Filter application method
-const applyFilters = () => {
-  router.get(route('contributions.index'), {
-    type: filters.value.type !== 'all' ? filters.value.type : undefined,
-    status: filters.value.status !== 'all' ? filters.value.status : undefined,
-    page: filters.value.page
-  }, {
-    preserveState: true,
-    preserveScroll: true
-  })
-}
+const contributionStatusChart = computed(() => ({
+  labels: Object.keys(props.contributionInsights.status_breakdown || {}),
+  series: Object.values(props.contributionInsights.status_breakdown || {})
+}))
 
-// Utility methods
+// Check for empty chart data
+const hasContributionTypeData = computed(() =>
+  contributionTypeChart.value.series.some(value => value > 0)
+)
+
+const hasContributionStatusData = computed(() =>
+  contributionStatusChart.value.series.some(value => value > 0)
+)
+
+// Chart Options
+const contributionTypeChartOptions = computed(() => ({
+  labels: contributionTypeChart.value.labels,
+  colors: ['#4CAF50', '#2196F3', '#FFC107'],
+  legend: {
+    position: 'bottom',
+    itemMargin: {
+      horizontal: 5,
+      vertical: 5
+    }
+  },
+  responsive: [{
+    breakpoint: 480,
+    options: {
+      chart: {
+        width: '100%'
+      },
+      legend: {
+        position: 'bottom'
+      }
+    }
+  }]
+}))
+
+const contributionStatusChartOptions = computed(() => ({
+  labels: contributionStatusChart.value.labels,
+  colors: ['#FFC107', '#4CAF50', '#F44336'],
+  plotOptions: {
+    radialBar: {
+      dataLabels: {
+        name: {
+          fontSize: '16px',
+          show: true
+        },
+        value: {
+          fontSize: '12px',
+          show: true
+        },
+        total: {
+          show: true,
+          label: 'Contributions',
+          fontSize: '14px'
+        }
+      }
+    }
+  },
+  responsive: [{
+    breakpoint: 480,
+    options: {
+      chart: {
+        height: 250
+      },
+      plotOptions: {
+        radialBar: {
+          dataLabels: {
+            name: { fontSize: '12px' },
+            value: { fontSize: '10px' }
+          }
+        }
+      }
+    }
+  }]
+}))
+
+// Utility Methods
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'MWK'
+    currency: 'MWK',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(amount)
 }
 
@@ -67,21 +187,16 @@ const formatDate = (dateString) => {
   })
 }
 
-// Status badge variant
 const getStatusVariant = (status) => {
-  switch (status) {
-    case 'pending':
-      return 'warning'
-    case 'paid':
-      return 'success'
-    case 'overdue':
-      return 'destructive'
-    default:
-      return 'secondary'
+  switch(status) {
+    case 'pending': return 'warning'
+    case 'paid': return 'success'
+    case 'overdue': return 'destructive'
+    default: return 'secondary'
   }
 }
 
-// Navigation methods
+// Navigation Methods
 const navigateToCreateContribution = () => {
   router.visit(route('contributions.create'))
 }
@@ -96,105 +211,57 @@ const loadPage = (page) => {
   applyFilters()
 }
 
-// Contribution Type Charts
-const contributionTypeChart = computed(() => ({
-  labels: Object.keys(props.contributionInsights.contribution_types || {}),
-  series: Object.values(props.contributionInsights.contribution_types || {})
-}))
-
-// Contribution Status Radial Chart
-const contributionStatusChart = computed(() => ({
-  labels: Object.keys(props.contributionInsights.status_breakdown || {}),
-  series: Object.values(props.contributionInsights.status_breakdown || {})
-}))
+// Filter Application
+const applyFilters = () => {
+  router.get(route('contributions.index'), {
+    type: filters.value.type !== 'all' ? filters.value.type : undefined,
+    status: filters.value.status !== 'all' ? filters.value.status : undefined,
+    page: filters.value.page
+  }, {
+    preserveState: true,
+    preserveScroll: true
+  })
+}
 </script>
 
 <template>
   <AppLayout>
-    <div class="mx-auto sm:px-4 py-6 space-y-6">
+    <div class="mx-auto sm:px-2 py-4 space-y-4 my-12">
       <!-- Page Header -->
-      <div class="flex justify-between items-center">
-        <h1 class="text-2xl md:text-3xl font-bold">
-          Contributions in {{ activeGroup.name }}
-        </h1>
-        <Button @click="navigateToCreateContribution">
-          <PlusIcon class="mr-2 h-4 w-4"/>
-          New Contribution
-        </Button>
+      <PageHeader>
+        Contributions in {{ activeGroup.name }}
+
+        <template #action>
+          <Button
+            @click="navigateToCreateContribution"
+            class="w-full sm:w-auto">
+            <PlusIcon class="mr-2 h-4 w-4"/>
+            New Contribution
+          </Button>
+        </template>
+      </PageHeader>
+
+      <!-- Insights Grid - More Compact on Small Screens -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <ContributionInsightCard
+          v-for="(insight, key) in compactInsights"
+          :key="key"
+          :title="insight.title"
+          :value="insight.value"
+          :subtitle="insight.subtitle"
+          :icon="insight.icon"
+          :variant="insight.variant"
+        />
       </div>
 
-      <!-- Contribution Insights -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Total Contributed</CardTitle>
-            <WalletIcon class="h-4 w-4 text-muted-foreground"/>
-          </CardHeader>
-          <CardContent>
-            <div class="text-2xl font-bold">
-              {{ formatCurrency(contributionInsights.total_contributed) }}
-            </div>
-            <p class="text-xs text-muted-foreground">
-              {{ contributionInsights.total_contributions }} contributions
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Pending</CardTitle>
-            <ClockIcon class="h-4 w-4 text-muted-foreground"/>
-          </CardHeader>
-          <CardContent>
-            <div class="text-2xl font-bold text-yellow-600">
-              {{ formatCurrency(contributionInsights.pending_total) }}
-            </div>
-            <p class="text-xs text-muted-foreground">
-              {{ contributionInsights.pending_count }} pending
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Paid</CardTitle>
-            <CheckCircleIcon class="h-4 w-4 text-muted-foreground"/>
-          </CardHeader>
-          <CardContent>
-            <div class="text-2xl font-bold text-green-600">
-              {{ formatCurrency(contributionInsights.paid_total) }}
-            </div>
-            <p class="text-xs text-muted-foreground">
-              {{ contributionInsights.paid_count }} paid
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle class="text-sm font-medium">Overdue</CardTitle>
-            <AlertCircleIcon class="h-4 w-4 text-muted-foreground"/>
-          </CardHeader>
-          <CardContent>
-            <div class="text-2xl font-bold text-red-600">
-              {{ formatCurrency(contributionInsights.overdue_total) }}
-            </div>
-            <p class="text-xs text-muted-foreground">
-              {{ contributionInsights.overdue_count }} overdue
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <!-- Contributions Table -->
-      <Card>
+      <!-- Contributions Section -->
+      <Card class="w-full">
         <CardHeader>
-          <div class="flex justify-between items-center">
+          <div class="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
             <CardTitle>Contribution History</CardTitle>
-            <div class="flex items-center space-x-2">
-              <!-- Filters -->
-              <Select v-model="filters.type">
-                <SelectTrigger class="w-[180px]">
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+              <Select v-model="filters.type" class="w-full sm:w-[180px]">
+                <SelectTrigger>
                   <SelectValue placeholder="Contribution Type"/>
                 </SelectTrigger>
                 <SelectContent>
@@ -205,8 +272,8 @@ const contributionStatusChart = computed(() => ({
                 </SelectContent>
               </Select>
 
-              <Select v-model="filters.status">
-                <SelectTrigger class="w-[180px]">
+              <Select v-model="filters.status" class="w-full sm:w-[180px]">
+                <SelectTrigger>
                   <SelectValue placeholder="Status"/>
                 </SelectTrigger>
                 <SelectContent>
@@ -219,164 +286,142 @@ const contributionStatusChart = computed(() => ({
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <!-- Mobile View -->
-          <div class="md:hidden space-y-4">
-            <Card
-              v-for="contribution in contributions.data"
-              :key="contribution.id"
-              class="hover:bg-muted/50 transition-colors"
-            >
-              <CardHeader>
-                <div class="flex justify-between items-center">
-                  <CardTitle class="text-base">
-                    {{ formatCurrency(contribution.amount) }}
-                  </CardTitle>
-                  <Badge :variant="getStatusVariant(contribution.status)">
-                    {{ contribution.status }}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div class="flex justify-between">
-                <span class="text-muted-foreground">
-                  {{ contribution.type }} Contribution
-                </span>
-                  <span>{{ formatDate(contribution.contribution_date) }}</span>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  @click="viewContributionDetails(contribution)"
-                >
-                  View Details
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
 
-          <!-- Desktop Table -->
-          <Table class="hidden md:table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow
+        <CardContent>
+          <!-- Empty State -->
+          <EmptyState
+            v-if="contributions.data.length === 0"
+            title="No Contributions Yet"
+            description="Start tracking your group contributions"
+            illustration="empty-contributions"
+          >
+            <Button @click="navigateToCreateContribution">
+              <PlusIcon class="mr-2 h-4 w-4"/>
+              Add First Contribution
+            </Button>
+          </EmptyState>
+
+          <!-- Contributions List -->
+          <template v-else>
+            <!-- Mobile View -->
+            <div class="block sm:hidden space-y-2">
+              <ContributionMobileCard
                 v-for="contribution in contributions.data"
                 :key="contribution.id"
-                class="hover:bg-muted/50 transition-colors"
-              >
-                <TableCell>
-                  {{ formatDate(contribution.contribution_date) }}
-                </TableCell>
-                <TableCell>
-                  {{ formatCurrency(contribution.amount) }}
-                </TableCell>
-                <TableCell class="capitalize">
-                  {{ contribution.type }}
-                </TableCell>
-                <TableCell>
-                  <Badge :variant="getStatusVariant(contribution.status)">
-                    {{ contribution.status }}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    @click="viewContributionDetails(contribution)"
-                  >
-                    View
-                  </Button>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+                :contribution="contribution"
+                @view="viewContributionDetails"
+              />
+            </div>
 
-    <!-- Contribution Analysis Section -->
-    <div class="grid md:grid-cols-2 gap-6 mt-6">
-      <!-- Contribution Types Pie Chart -->
-      <Card>
-        <CardHeader>
-          <CardTitle>Contribution Types</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <apexchart
-            type="pie"
-            :options="{
-            labels: contributionTypeChart.labels,
-            colors: ['#4CAF50', '#2196F3', '#FFC107'],
-            legend: { position: 'bottom' }
-          }"
-            :series="contributionTypeChart.series"
-            height="350"
-          />
+            <!-- Desktop Table -->
+            <Table class="hidden sm:table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow
+                  v-for="contribution in contributions.data"
+                  :key="contribution.id"
+                  class="hover:bg-muted/50 transition-colors"
+                >
+                  <TableCell>{{ formatDate(contribution.contribution_date) }}</TableCell>
+                  <TableCell>{{ formatCurrency(contribution.amount) }}</TableCell>
+                  <TableCell class="capitalize">{{ contribution.type }}</TableCell>
+                  <TableCell>
+                    <Badge :variant="getStatusVariant(contribution.status)">
+                      {{ contribution.status }}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      @click="viewContributionDetails(contribution)"
+                    >
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </template>
         </CardContent>
       </Card>
 
-      <!-- Contribution Status Radial Chart -->
-      <Card>
-        <CardHeader>
-          <CardTitle>Contribution Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <apexchart
-            type="radialBar"
-            :options="{
-            labels: contributionStatusChart.labels,
-            plotOptions: {
-              radialBar: {
-                dataLabels: {
-                  name: { fontSize: '22px' },
-                  value: { fontSize: '16px' },
-                  total: {
-                    show: true,
-                    label: 'Total Contributions'
-                  }
-                }
-              }
-            },
-            colors: ['#FFC107', '#4CAF50', '#F44336']
-          }"
-            :series="contributionStatusChart.series"
-            height="350"
-          />
-        </CardContent>
-      </Card>
-    </div>
+      <!-- Analysis Section with Empty States -->
+      <div class="grid sm:grid-cols-2 gap-4">
+        <!-- Contribution Types Chart -->
+        <Card>
+          <CardHeader>
+            <CardTitle>Contribution Types</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EmptyChartState
+              v-if="!hasContributionTypeData"
+              title="No Contribution Types Data"
+              description="Start making contributions to see your breakdown"
+            />
+            <apexchart
+              v-else
+              type="pie"
+              :options="contributionTypeChartOptions"
+              :series="contributionTypeChart.series"
+              height="350"
+            />
+          </CardContent>
+        </Card>
 
-    <!-- Pagination for Mobile -->
-    <div class="md:hidden flex justify-between items-center mt-4">
-      <Button
-        variant="outline"
-        size="sm"
-        :disabled="!contributions.prev_page_url"
-        @click="loadPage(contributions.current_page - 1)"
-      >
-        Previous
-      </Button>
-      <span class="text-muted-foreground">
-      Page {{ contributions.current_page }} of {{ contributions.last_page }}
-    </span>
-      <Button
-        variant="outline"
-        size="sm"
-        :disabled="!contributions.next_page_url"
-        @click="loadPage(contributions.current_page + 1)"
-      >
-        Next
-      </Button>
+        <!-- Contribution Status Chart -->
+        <Card>
+          <CardHeader>
+            <CardTitle>Contribution Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EmptyChartState
+              v-if="!hasContributionStatusData"
+              title="No Contribution Status Data"
+              description="Your contribution status will appear here"
+            />
+            <apexchart
+              v-else
+              type="radialBar"
+              :options="contributionStatusChartOptions"
+              :series="contributionStatusChart.series"
+              height="350"
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-between items-center mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="!contributions.prev_page_url"
+          @click="loadPage(contributions.current_page - 1)"
+        >
+          Previous
+        </Button>
+
+        <span class="text-muted-foreground">
+          Page {{ contributions.current_page }} of {{ contributions.last_page }}
+        </span>
+
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="!contributions.next_page_url"
+          @click="loadPage(contributions.current_page + 1)">
+          Next
+        </Button>
+      </div>
     </div>
   </AppLayout>
 </template>
@@ -386,6 +431,21 @@ const contributionStatusChart = computed(() => ({
 @media (max-width: 768px) {
   .grid {
     grid-template-columns: 1fr !important;
+  }
+}
+  /* Responsive adjustments */
+@media (max-width: 480px) {
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .grid {
+    gap: 0.5rem;
+  }
+
+  h1 {
+    font-size: 1rem;
   }
 }
 </style>
