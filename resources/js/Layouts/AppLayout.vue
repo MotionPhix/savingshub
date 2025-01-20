@@ -1,11 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import {Toaster, toast} from 'vue-sonner'
 import SiteHeader from "@/Layouts/Partials/SiteHeader.vue";
 import Sidebar from "@/Layouts/Partials/Sidebar.vue";
 import SiteFooter from "@/Layouts/Partials/SiteFooter.vue";
-import {onMounted, onUnmounted, ref, watch} from "vue";
-import {Button} from "@/Components/ui/button/index.js";
-import {usePage} from "@inertiajs/vue3";
+import {onMounted, onUnmounted, ref} from "vue";
+import {Button} from "@/Components/ui/button";
+import {useToast} from "@/composables/useToast";
 
 const isMobile = ref(window.innerWidth < 1024)
 const isSidebarOpen = ref(false)
@@ -25,38 +25,12 @@ const toggleSidebar = () => {
 
 onMounted(() => {
   window.addEventListener('resize', checkScreenSize)
+  useToast()
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkScreenSize)
 })
-
-// Watch for error messages in Inertia props
-watch(
-  () => usePage().props.errors,
-  (errors) => {
-    // Handle generic error message
-    if (errors.message) {
-      toast.error(errors.message, {
-        duration: 5000,
-      });
-
-      /*toast.error('Check your action', {
-        description: errors.message,
-        duration: 5000,
-      })*/
-    }
-
-    // Optionally handle specific error types
-    if (errors.authorization) {
-      toast.warning('Access Denied', {
-        description: errors.authorization,
-        duration: 5000,
-      })
-    }
-  },
-  {immediate: true}
-)
 </script>
 
 <template>
@@ -74,8 +48,7 @@ watch(
           size="icon"
           variant="ghost"
           @click="toggleSidebar"
-          class="text-foreground hover:bg-accent hover:text-accent-foreground"
-        >
+          class="text-foreground hover:bg-accent hover:text-accent-foreground">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" width="24" height="24"
                fill="none">
             <path d="M4 5L16 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -89,26 +62,26 @@ watch(
       </template>
     </SiteHeader>
 
-    <div class="flex mt-16 h-[calc(100vh-4rem)]">
+    <div class="flex h-svh">
       <!-- Sidebar for Desktop -->
       <Sidebar
         v-if="!isMobile"
-        class="w-64 shrink-0 border-r border-border bg-muted/50"
+        class="w-64 shrink-0 border-r border-border bg-muted/50 pt-16"
       />
 
       <!-- Mobile Sidebar (Overlay) -->
       <div
         v-if="isMobile && isSidebarOpen"
-        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm pt-16"
         @click="isSidebarOpen = false">
         <Sidebar
-          class="w-64 mt-14 max-w-[80%] h-full bg-background shadow-lg transform translate-x-0 transition-transform duration-300 border-r border-border"
+          class="w-64 max-w-[80%] h-full bg-background shadow-lg transform translate-x-0 transition-transform duration-300 border-r border-border"
         />
       </div>
 
       <!-- Main Content Area -->
       <main
-        class="flex-1 overflow-y-auto p-6 transition-all duration-300 ease-in-out bg-background"
+        class="flex-1 overflow-y-auto mt-10 p-6 transition-all duration-300 ease-in-out bg-background"
         :class="{
           'lg:ml-64': !isMobile,
           'w-full': isMobile

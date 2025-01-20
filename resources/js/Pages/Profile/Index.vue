@@ -50,7 +50,6 @@ const isCompressing = ref(false)
 const userStore = useUserStore()
 
 // State for preview and compression
-
 const handleAvatarUpload = (event) => {
   const file = event.target.files[0]
 
@@ -159,6 +158,7 @@ const updateProfile = async () => {
           _method: 'patch',
           // Only include non-null values
           ...(data.phone_number && { phone_number: data.phone_number }),
+          ...(data.avatar as any instanceof File && { avatar: data.avatar }),
           ...(data.gender && { gender: data.gender }),
           ...(data.bio && { bio: data.bio }),
         }

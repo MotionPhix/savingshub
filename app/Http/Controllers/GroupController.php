@@ -201,7 +201,6 @@ class GroupController extends Controller implements HasMiddleware
       'stats' => $groupStats,
       'members' => $membersDetails,
       'recent_activities' => $recentActivities,
-      'canManageGroup' => Gate::allows('update', $group)
     ]);
   }
 
@@ -230,32 +229,41 @@ class GroupController extends Controller implements HasMiddleware
   {
     return [
       'total_members' => $group->members->count(),
+
       'active_members' => $group->members->where('status', 'active')->count(),
+
       'total_contributions' => DB::table('contributions')
         ->join('group_members', 'contributions.group_member_id', '=', 'group_members.id')
         ->where('group_members.group_id', $group->id)
         ->where('contributions.status', 'paid')
+        ->where('contributions.is_verified', (bool)1)
         ->sum('contributions.amount'),
+
       'total_loans' => DB::table('loans')
         ->join('group_members', 'loans.group_member_id', '=', 'group_members.id')
         ->where('group_members.group_id', $group->id)
         ->whereIn('loans.status', ['active', 'paid'])
         ->sum('loans.total_amount'),
+
       'pending_contributions' => DB::table('contributions')
         ->join('group_members', 'contributions.group_member_id', '=', 'group_members.id')
         ->where('group_members.group_id', $group->id)
         ->where('contributions.status', 'pending')
+        ->orWhere('contributions.status', 'partial')
         ->count(),
+
       'pending_loans' => DB::table('loans')
         ->join('group_members', 'loans.group_member_id', '=', 'group_members.id')
         ->where('group_members.group_id', $group->id)
         ->where('loans.status', 'pending')
         ->count(),
+
       'overdue_contributions' => DB::table('contributions')
         ->join('group_members', 'contributions.group_member_id', '=', 'group_members.id')
         ->where('group_members.group_id', $group->id)
         ->where('contributions.status', 'overdue')
         ->count(),
+
       'overdue_loans' => DB::table('loans')
         ->join('group_members', 'loans.group_member_id', '=', 'group_members.id')
         ->where('group_members.group_id', $group->id)
@@ -280,7 +288,7 @@ class GroupController extends Controller implements HasMiddleware
         'total_loans' => $member->total_loans,
         'contribution_stats' => [
           'total_paid' => $member->contributions->where('status', 'paid')->sum('amount'),
-          'pending_count' => $member->contributions->where('status', 'pending')->count(),
+          'pending_count' => $member->contributions->where('status', 'pending')->where('status', 'partial')->count(),
           'overdue_count' => $member->contributions->where('status', 'overdue')->count()
         ],
         'loan_stats' => [
@@ -342,10 +350,13 @@ class GroupController extends Controller implements HasMiddleware
       'contribution_frequency' => 'required|in:weekly,monthly,quarterly,annually',
       'contribution_amount' => 'required|numeric|min:1',
       'duration_months' => 'required|integer|min:1|max:36',
+      'allowed_partial_percentage' => 'required|numeric|min:0.5|max:1',
       'loan_interest_type' => 'required|in:fixed,variable,tiered',
       'base_interest_rate' => 'required|numeric|min:0|max:100',
       'max_loan_amount' => 'nullable|numeric|min:0',
       'require_group_approval' => 'boolean'
+    ], [
+      'allowed_partial_percentage.min' => 'The minimum allowed partial payment is 50%'
     ]);
 
     try {

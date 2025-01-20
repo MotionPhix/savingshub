@@ -80,7 +80,7 @@ const expandedLoans = ref(false)
 
       <CardContent>
         <!-- Desktop Grid View -->
-        <div class="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="hidden md:grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           <div
             v-for="contribution in personalContributions"
             :key="contribution.groupName"

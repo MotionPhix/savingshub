@@ -3,14 +3,21 @@
 namespace App\Services;
 
 use App\Models\Group;
+use App\Models\GroupActivity;
 use App\Models\GroupMember;
 use App\Models\Contribution;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ContributionService
 {
+  public function __construct(protected GroupActivityService $activityService)
+  {
+  }
+
   public function processScheduledContributions(Group $group)
   {
     return DB::transaction(function () use ($group) {
@@ -873,6 +880,222 @@ class ContributionService
     };
 
     return min(1, max(0, $riskScore));
+  }
+
+  // real life situations
+  public function validateContributionState(GroupMember $groupMember, Group $group): bool
+  {
+    $lastContribution = $groupMember->contributions()
+      ->where('group_id', $group->id)
+      ->latest()
+      ->first();
+
+    // Ensure the last contribution is verified before allowing another contribution
+    if ($lastContribution && !$lastContribution->is_verified) {
+       throw new \Exception('Previous contribution is not verified. Please wait for verification before making another contribution.');
+    }
+
+    // Ensure no overdue payments or balance due
+    if ($lastContribution && $lastContribution->status === 'partial') {
+      throw new \Exception('Previous contribution is partial. Settle the balance before making a new contribution.');
+    }
+
+    return true;
+  }
+
+  private function checkForLatePayments($group, $contributionDate, $amount)
+  {
+    // Get the first day of the next month
+    $nextMonthStart = now()->addMonth()->startOfMonth();
+
+    // Calculate the cutoff date by adding the 'allow_payments_until' days to the start of the next month
+    $paymentCutoffDate = $nextMonthStart->addDays($group->allow_contributions_until);
+
+    // If the contribution date is later than the cutoff date, apply penalties
+    if ($contributionDate->gt($paymentCutoffDate)) {
+
+      // Fetch the user's previous total contribution balance (including partial payments)
+      $totalPaidSoFar = GroupActivity::where('group_id', $group->id)
+        ->where('user_id', Auth::user()->id)
+        ->whereIn('type', ['partial_contribution_made', 'contribution_made'])
+        ->sum('metadata->amount'); // Sum all previous payments
+
+      // Calculate the remaining balance (the user was supposed to pay the full required amount)
+      $remainingBalance = $group->contribution_amount - $totalPaidSoFar;
+
+      // Apply penalty if there's a balance remaining
+      $penalty = ($remainingBalance * $group->penalty_fee_percentage);
+      $totalDue = $remainingBalance + $penalty;
+
+      // If the user is paying less than the required amount (balance + penalty), show an error
+      if ($amount < $totalDue) {
+        throw new \Exception("The amount you are contributing is less than the overdue balance plus the penalty fee. You must pay the remaining balance of {$remainingBalance} plus the penalty of {$penalty} for a total of {$totalDue}. The amount you are contributing is {$amount} less than the required amount.");
+      }
+    }
+  }
+
+  public function calculateContributionStatus(Group $group, float $amount): array
+  {
+    $requiredAmount = $group->contribution_amount;
+
+    // Exact match
+    if (bccomp($amount, $requiredAmount, 2) === 0) {
+      return [
+        'status' => 'pending',
+        'message' => 'Contribution submitted successfully.'
+      ];
+    }
+
+    // Overpayment
+    if (bccomp($amount, $requiredAmount, 2) > 0) {
+      return [
+        'status' => 'pending',
+        'message' => 'Overpayment detected. Awaiting verification.',
+        'overpayment_amount' => bcsub($amount, $requiredAmount, 2)
+      ];
+    }
+
+    // Partial payment
+    if (bccomp($amount, $requiredAmount, 2) < 0) {
+      $shortfallAmount = bcsub($requiredAmount, $amount, 2);
+
+      return [
+        'status' => 'pending',
+        'message' => 'Partial contribution submitted. Additional amount required.',
+        'shortfall_amount' => $shortfallAmount
+      ];
+    }
+
+    return [
+      'status' => 'failed',
+      'message' => 'Your contribution could not be processed. Please contact your group admin.',
+    ];
+  }
+
+  public function prepareContributionMetadata(Group $group, array $contributionStatus): array
+  {
+    $metadata = [
+      'group_contribution_amount' => $group->contribution_amount,
+      'contribution_frequency' => $group->contribution_frequency,
+    ];
+
+    // Add specific metadata based on contribution status
+    if (isset($contributionStatus['overpayment_amount'])) {
+      $metadata['overpayment_amount'] = $contributionStatus['overpayment_amount'];
+    }
+
+    if (isset($contributionStatus['shortfall_amount'])) {
+      $metadata['shortfall_amount'] = $contributionStatus['shortfall_amount'];
+    }
+
+    return $metadata;
+  }
+
+  private function checkPartialPaymentLimit($group, $user)
+  {
+    // Fetch the number of partial payments already made by the user
+    $partialPayments = GroupActivity::where('group_id', $group->id)
+      ->where('user_id', $user->id)
+      ->where('type', 'partial_contribution_made')
+      ->where('metadata->date', now($user->timezone)->format('Y-m-d'))
+      ->count();
+
+    if ($partialPayments >= $group->max_allowed_partial_contributions) {
+      throw new \Exception('You have reached the maximum allowed partial payments.');
+    }
+  }
+
+  private function checkDuplicateContribution($group, $user, $contributionDate)
+  {
+    // Check if a contribution for the same date exists and is unverified
+    $existingContributionFromActivity = GroupActivity::where('user_id', $user->id)
+      ->where('group_id', $group->id)
+      ->whereIn('type', ['partial_contribution_made', 'contribution_made'])
+      ->where('metadata->date', $contributionDate->toDateString()) // Check for duplicate using the exact date in metadata
+      ->whereNull('verified_at') // Ensure it's unverified
+      ->exists();
+
+    if ($existingContributionFromActivity) {
+      throw new \Exception('A contribution for this date already exists and is not yet verified.');
+    }
+  }
+
+  private function storeContributionData($group, $user, $validatedData, $contributionDate, $amount)
+  {
+    // Log the contribution in GroupActivity
+    GroupActivity::create([
+      'group_id' => $group->id,
+      'user_id' => $user->id,
+      'type' => $amount < $group->required_amount ? 'partial_contribution_made' : 'contribution_made',
+      'description' => 'User made a contribution.',
+      'metadata' => [
+        'amount' => $amount,
+        'date' => $contributionDate,
+        'original_amount' => $validatedData['amount'], // If needed for record
+      ],
+    ]);
+
+    // If the contribution is full, update the contributions table
+    if ($amount >= $group->required_amount) {
+      Contribution::create([
+        'group_id' => $group->id,
+        'group_member_id' => $user->id,
+        'amount' => $amount,
+        'contribution_date' => $contributionDate,
+      ]);
+    }
+
+    $contribution = Contribution::create([
+      'group_member_id' => $user->id,
+      'group_id' => $group->id,
+      'user_id' => Auth::id(),
+      'amount' => $validatedData['amount'],
+      'contribution_date' => $validatedData['contribution_date'],
+      'status' => $contributionStatus['status'],
+      'type' => $validatedData['type'] ?? 'regular',
+      'payment_method' => $validatedData['payment_method'] ?? null,
+      'transaction_reference' => $validatedData['transaction_reference'] ?? null,
+      'is_verified' => false, // Always start as unverified
+      'metadata' => $this->prepareContributionMetadata($group, $contributionStatus)
+    ]);
+
+    // Log the contribution in GroupActivity
+    $this->activityService->log(
+      $group,
+      $validatedData['amount'] < $group->required_amount ? 'partial_contribution_made' : 'contribution_made',
+      $user,
+      null,
+      [
+        'amount' => $validatedData['amount'],
+        'date' => $validatedData['contribution_date'],
+        'required_amount' => $group->getAttribute('contribution_amount'),
+      ],
+    );
+
+    return $contribution;
+  }
+
+  /**
+   * @throws \Exception
+   */
+  public function storeContribution(array $validatedData, Group $group, User $user, array $contributionStatus)
+  {
+    // Extract and validate the date and amount
+    $contributionDate = Carbon::parse($validatedData['contribution_date']);
+    $amount = $validatedData['amount'];
+    $requiredAmount = $group->getAttribute('contribution_amount');
+
+    // Ensure the contribution is within the allowed period
+    $this->checkForLatePayments($group, $contributionDate, $amount);
+
+    // Check if the user has exceeded the maximum allowed partial payments
+    $this->checkPartialPaymentLimit($group, $user, $validatedData);
+
+    // Check if a contribution for this date already exists
+    $this->checkDuplicateContribution($group, $user, $contributionDate);
+
+    // Store the contribution if everything is valid
+    return $this->storeContributionData($group, $user, $validatedData, $contributionDate, $amount);
   }
 }
 

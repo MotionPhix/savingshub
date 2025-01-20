@@ -34,6 +34,7 @@ class Group extends Model
     'status',
     'is_public',
     'allow_member_invites',
+    'allowed_partial_percentage',
     'created_by',
     'loan_interest_type',
     'base_interest_rate',

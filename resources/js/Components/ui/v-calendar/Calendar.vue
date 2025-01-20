@@ -56,6 +56,7 @@ const vCalendarSlots = computed(() => {
       class="absolute flex justify-between w-full px-4 top-3 z-[1]"
     >
       <button
+        type="button"
         :class="
           cn(
             buttonVariants({ variant: 'outline' }),
@@ -66,7 +67,9 @@ const vCalendarSlots = computed(() => {
       >
         <ChevronLeft class="w-4 h-4" />
       </button>
+
       <button
+        type="button"
         :class="
           cn(
             buttonVariants({ variant: 'outline' }),

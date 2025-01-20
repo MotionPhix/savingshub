@@ -3,6 +3,7 @@
 
 namespace App\Services;
 
+use App\Models\Contribution;
 use App\Models\Group;
 use App\Models\GroupInvitation;
 use App\Models\GroupMember;
@@ -300,5 +301,33 @@ class GroupService
         ->where('user_id', $user->id)
         ->where('role', 'admin')
         ->exists();
+  }
+
+  /**
+   * Get comprehensive financial insights for the group
+   */
+  public function getGroupFinancialInsights(int $groupId)
+  {
+    return [
+      'total_members' => GroupMember::where('group_id', $groupId)->count(),
+      'total_contributions' => Contribution::where('group_id', $groupId)->sum('amount'),
+      'average_contribution' => Contribution::where('group_id', $groupId)
+        ->where('status', 'paid')
+        ->avg('amount'),
+      'members_contribution_summary' => GroupMember::where('group_id', $groupId)
+        ->with(['user:id,name,uuid', 'contributions'])
+        ->get()
+        ->map(function ($member) {
+          $contributions = $member->contributions;
+          return [
+            'user_id' => $member->user_id,
+            'name' => $member->user->name,
+            'total_contributed' => $contributions->sum('amount'),
+            'paid_contributions' => $contributions->where('status', 'paid')->count(),
+            'pending_contributions' => $contributions->whereIn('status', ['pending', 'partial'])->count(),
+            'overdue_contributions' => $contributions->where('status', 'overdue')->count()
+          ];
+        })
+    ];
   }
 }

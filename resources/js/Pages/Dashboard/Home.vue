@@ -173,7 +173,7 @@ onMounted(() => {
 
     <!-- Regular User Dashboard -->
     <template v-else>
-      <div class="mx-auto sm:px-4 py-8 space-y-8">
+      <div class="mx-auto sm:px-4 py-8 space-y-8 my-12">
         <!-- Dashboard Header -->
         <PageHeader>
           Welcome, <br />{{ user.name }}
@@ -193,28 +193,6 @@ onMounted(() => {
             </Button>
           </template>
         </PageHeader>
-
-        <!--        <div class="flex flex-col md:flex-row justify-between items-center mb-8">-->
-        <!--          <div>-->
-        <!--            <h1 class="text-3xl font-bold text-foreground mb-2">-->
-        <!--              Welcome, {{ user.name }}-->
-        <!--            </h1>-->
-        <!--            <p class="text-muted-foreground">-->
-        <!--              {{ getDashboardSubtitle }}-->
-        <!--            </p>-->
-        <!--          </div>-->
-
-        <!--          <div class="flex space-x-4 mt-4 md:mt-0">-->
-        <!--            <Button variant="default" @click="createGroup">-->
-        <!--              <PlusCircleIcon class="mr-2 h-4 w-4"/>-->
-        <!--              Create Group-->
-        <!--            </Button>-->
-        <!--            <Button variant="outline" @click="exportReport">-->
-        <!--              <DownloadIcon class="mr-2 h-4 w-4"/>-->
-        <!--              Export Report-->
-        <!--            </Button>-->
-        <!--          </div>-->
-        <!--        </div>-->
 
         <!-- Role-Specific Dashboard Sections -->
         <template v-if="activeGroupRole === 'admin'">
@@ -286,13 +264,13 @@ onMounted(() => {
           <CardHeader>
             <CardTitle>Recent Activities</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent class="divide-y divide-accent-foreground">
             <div
               v-for="activity in analytics.recent_activities"
               :key="activity.date"
-              class="flex justify-between items-center p-4 border-b">
+              class="flex justify-between items-center">
               <div>
-                <p class="font-medium">{{ activity.type }}</p>
+                <p class="font-medium capitalize">{{ activity.type }}</p>
                 <p class="text-muted-foreground">{{ activity.group_name }}</p>
               </div>
 

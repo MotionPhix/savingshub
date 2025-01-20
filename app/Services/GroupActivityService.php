@@ -109,6 +109,8 @@ class GroupActivityService
       'member_invited' => "{$userName} was invited to the group",
       'contribution_made' => "{$userName} made a contribution of " .
         ($metadata['amount'] ?? 'N/A'),
+      'partial_contribution_made' => "{$userName} made a a partial contribution of " .
+        ($metadata['amount'] ?? 'N/A'),
       'loan_requested' => "{$userName} requested a loan of " .
         ($metadata['amount'] ?? 'N/A'),
       'loan_approved' => "Loan for {$userName} was approved",

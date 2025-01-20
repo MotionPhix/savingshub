@@ -38,7 +38,6 @@ const props = withDefaults(
     contribution_insights?: object
     loan_insights?: object
     recent_activities: Array<{}>
-    canManageGroup: boolean
   }>(),
   {
     stats: () => ({
@@ -59,7 +58,7 @@ const props = withDefaults(
 
 // Active tab management
 const {activeTab, handleTabChange} = useTabPersistence()
-const currency = usePage().props.currency
+const auth = usePage().props.auth
 
 // Computed properties for quick access
 const groupMembers = computed(() => props.members)
@@ -97,14 +96,14 @@ const inviteMembers = () => {
         <template #action>
 
           <Button
-            v-if="canManageGroup"
+            v-if="auth.can.edit_group"
             @click="editGroup"
             variant="outline">
             Edit Group
           </Button>
 
           <Button
-            v-if="canManageGroup"
+            v-if="auth.can.invite_members"
             @click="inviteMembers">
             Invite Members
           </Button>

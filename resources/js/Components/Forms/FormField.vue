@@ -102,12 +102,12 @@ const containerClasses = computed(() => props.containerClass || 'mb-4')
 <template>
   <div :class="containerClasses">
     <slot name="label">
-      <Label v-if="label" :for="id" class="mb-2">
+      <Label v-if="label" :for="id">
         {{ label }} <span v-if="required" class="text-red-500 ml-1">*</span>
       </Label>
     </slot>
 
-    <div class="relative">
+    <div class="relative" :class="{ 'mt-2': label }">
       <slot name="prefix">
         <span v-if="prefix" class="absolute inset-y-0 left-3 flex items-center text-gray-500">
           <component :is="prefix" v-if="typeof prefix === 'object'" />

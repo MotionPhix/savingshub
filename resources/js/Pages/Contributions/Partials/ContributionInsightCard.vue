@@ -28,19 +28,25 @@ const iconClasses = computed(() => {
 
 <template>
   <Card>
-    <CardContent class="p-4 flex items-center justify-between">
-      <div class="flex flex-col">
-        <p class="text-xs text-muted-foreground mb-1">{{ title }}</p>
-        <h3 class="text-lg font-bold">{{ value }}</h3>
-        <p class="text-xs text-muted-foreground">{{ subtitle }}</p>
-      </div>
-      <div class="ml-4">
+    <CardContent class="p-4">
+
+      <div class="mr-4 flex items-center justify-between w-full">
+        <p class="text-xs text-muted-foreground mb-1">
+          {{ title }}
+        </p>
+
         <component
           :is="icon"
-          class="h-6 w-6"
+          class="h-5 w-5 shrink-0"
           :class="iconClasses"
         />
       </div>
+
+      <div class="flex flex-col">
+        <h3 class="text-lg font-bold">{{ value }}</h3>
+        <p class="text-xs text-muted-foreground">{{ subtitle }}</p>
+      </div>
+
     </CardContent>
   </Card>
 </template>
