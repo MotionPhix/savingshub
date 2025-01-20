@@ -66,16 +66,16 @@ onUnmounted(() => {
       <!-- Sidebar for Desktop -->
       <Sidebar
         v-if="!isMobile"
-        class="w-64 shrink-0 border-r border-border bg-muted/50 pt-16"
+        class="w-64 shrink-0 border-r border-border bg-muted/50 pt-[60px]"
       />
 
       <!-- Mobile Sidebar (Overlay) -->
       <div
         v-if="isMobile && isSidebarOpen"
-        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm pt-16"
+        class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
         @click="isSidebarOpen = false">
         <Sidebar
-          class="w-64 max-w-[80%] h-full bg-background shadow-lg transform translate-x-0 transition-transform duration-300 border-r border-border"
+          class="w-64 max-w-[80%] pt-[70px] h-full bg-background shadow-lg transform translate-x-0 transition-transform duration-300 border-r border-border"
         />
       </div>
 

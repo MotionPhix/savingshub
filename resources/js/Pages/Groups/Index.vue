@@ -290,6 +290,7 @@ const groupStatusVariants = {
                 <DropdownMenuContent align="end" :side-offset="-4">
                   <DropdownMenuItem
                     @click="viewGroupDetails(group)"
+                    v-if="group.uuid === $page.props.current_group.uuid"
                     class="cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
                       <path
@@ -311,7 +312,7 @@ const groupStatusVariants = {
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    v-if="group.user_role === 'admin' || group.user_role === 'treasurer'"
+                    v-if="(group.user_role === 'admin' || group.user_role === 'treasurer') && group.uuid === $page.props.current_group.uuid"
                     @click="editGroup(group)"
                     class="cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
@@ -326,7 +327,7 @@ const groupStatusVariants = {
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
-                    v-if="$page.props.current_path !== group.uuid"
+                    v-if="group.uuid !== $page.props.current_group.uuid"
                     @click="activateGroup(group)"
                     class="cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">

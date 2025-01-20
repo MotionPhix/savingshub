@@ -343,7 +343,7 @@ const contributionStatusChartOptions = computed(() => ({
       </PageHeader>
 
       <!-- Insights Section with Advanced Analytics -->
-      <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <ContributionInsightCard
           v-for="(insight, key) in compactInsights"
           :key="key"

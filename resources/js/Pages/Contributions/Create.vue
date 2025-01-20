@@ -13,6 +13,7 @@ import {useScreens} from 'vue-screen-utils';
 import {toast} from "vue-sonner";
 import {watch, ref} from "vue";
 import { Loader2Icon } from 'lucide-vue-next'
+import {data} from "autoprefixer";
 const {mapCurrent} = useScreens({xs: '0px', sm: '640px', md: '768px', lg: '1024px'});
 const columns = mapCurrent({md: 2, lg: 2}, 1);
 
@@ -21,7 +22,7 @@ const payment_method = ref('cash')
 const form = useForm({
   amount: 0,
   contribution_date: null,
-  transaction_reference: null,
+  transaction_reference: '',
   type: 'regular'
 })
 
@@ -43,10 +44,12 @@ const paymentMethods = [
 const submit = () => {
   form
     .transform(data => {
+      const { transaction_reference, ...rest } = data
+
       return {
-        ...data,
+        ...rest,
         ...(payment_method.value && {payment_method: payment_method.value}),
-        ...(data.transaction_reference && {transaction_reference: data.transaction_reference}),
+        ...(transaction_reference.length && {transaction_reference: data.transaction_reference}),
         ...(data.contribution_date && {contribution_date: format(data.contribution_date, 'yyyy-MM-dd')}),
       }
     })
@@ -69,9 +72,9 @@ const submit = () => {
 // Watch payment method to reset transaction reference
 watch(payment_method, (newMethod) => {
   if (newMethod !== 'bank_transfer') {
-    form.transaction_reference = null
+    form.reset('transaction_reference')
   }
-})
+}, {immediate: true})
 </script>
 
 <template>

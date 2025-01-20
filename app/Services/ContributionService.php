@@ -14,9 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class ContributionService
 {
-  public function __construct(protected GroupActivityService $activityService)
-  {
-  }
+  public function __construct(
+    protected GroupActivityService $activityService,
+    protected penaltyCalculationService $penaltyCalculationService
+  ) {}
 
   public function processScheduledContributions(Group $group)
   {
@@ -41,7 +42,6 @@ class ContributionService
       : 0;
   }
 
-
   /*private function calculateOverdueRate(Group $group)
   {
     $totalContributions = Contribution::where('group_id', $group->id)->count();
@@ -53,8 +53,6 @@ class ContributionService
       ? ($overdueContributions / $totalContributions) * 100
       : 0;
   }*/
-
-
 
   private function createScheduledContribution(GroupMember $groupMember)
   {
@@ -173,23 +171,21 @@ class ContributionService
     // Comprehensive group contribution health check
     $contributions = Contribution::where('group_id', $group->id)
       ->selectRaw('
-                COUNT(*) as total_contributions,
-                SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as paid_contributions,
-                SUM(CASE WHEN status = "overdue" THEN 1 ELSE 0 END) as overdue_contributions,
-                AVG(CASE WHEN status = "paid" THEN amount END) as average_contribution,
-                SUM(CASE WHEN status = "paid" THEN amount ELSE 0 END) as total_collected
-            ')
-      ->first();
+        COUNT(*) as total_contributions,
+        SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as paid_contributions,
+        SUM(CASE WHEN status = "overdue" THEN 1 ELSE 0 END) as overdue_contributions,
+        AVG(CASE WHEN status = "paid" THEN amount END) as average_contribution,
+        SUM(CASE WHEN status = "paid" THEN amount ELSE 0 END) as total_collected
+      ')->first();
 
     $memberContributionBreakdown = GroupMember::where('group_id', $group->id)
       ->with(['contributions' => function ($query) {
         $query->selectRaw('
-                    group_member_id,
-                    COUNT(*) as total_contributions,
-                    SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as paid_contributions,
-                    SUM(CASE WHEN status = "overdue" THEN 1 ELSE 0 END) as overdue_contributions
-                ')
-          ->groupBy('group_member_id');
+          group_member_id,
+          COUNT(*) as total_contributions,
+          SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as paid_contributions,
+          SUM(CASE WHEN status = "overdue" THEN 1 ELSE 0 END) as overdue_contributions
+        ')->groupBy('group_member_id');
       }])
       ->get()
       ->map(function ($member) {
@@ -934,41 +930,44 @@ class ContributionService
     }
   }
 
-  public function calculateContributionStatus(Group $group, float $amount): array
-  {
-    $requiredAmount = $group->contribution_amount;
+  /**
+   * Calculate contribution status
+   */
+  public function calculateContributionStatus(
+    Group $group,
+    float $amount,
+    User $user,
+    string $contributionType
+  ): array {
+    // Validate the contribution amount
+    $validationResult = $this->validateContributionAmount(
+      $group,
+      $user,
+      $amount,
+      $contributionType
+    );
 
-    // Exact match
-    if (bccomp($amount, $requiredAmount, 2) === 0) {
+    // Additional checks for existing contributions in the current month
+    $existingContribution = Contribution::where('user_id', $user->id)
+      ->where('group_id', $group->id)
+      ->whereMonth('contribution_date', now()->month)
+      ->whereYear('contribution_date', now()->year)
+      ->first();
+
+    // Prevent multiple full contributions in the same month
+    if ($existingContribution &&
+      $existingContribution->status === 'paid' &&
+      $contributionType === 'regular') {
       return [
-        'status' => 'pending',
-        'message' => 'Contribution submitted successfully.'
-      ];
-    }
-
-    // Overpayment
-    if (bccomp($amount, $requiredAmount, 2) > 0) {
-      return [
-        'status' => 'pending',
-        'message' => 'Overpayment detected. Awaiting verification.',
-        'overpayment_amount' => bcsub($amount, $requiredAmount, 2)
-      ];
-    }
-
-    // Partial payment
-    if (bccomp($amount, $requiredAmount, 2) < 0) {
-      $shortfallAmount = bcsub($requiredAmount, $amount, 2);
-
-      return [
-        'status' => 'pending',
-        'message' => 'Partial contribution submitted. Additional amount required.',
-        'shortfall_amount' => $shortfallAmount
+        'status' => 'failed',
+        'message' => 'You have already made a full contribution this month.'
       ];
     }
 
     return [
-      'status' => 'failed',
-      'message' => 'Your contribution could not be processed. Please contact your group admin.',
+      'status' => $validationResult['status'],
+      'message' => $validationResult['message'],
+      'contribution_details' => $validationResult['contribution_details']
     ];
   }
 
@@ -997,7 +996,7 @@ class ContributionService
     $partialPayments = GroupActivity::where('group_id', $group->id)
       ->where('user_id', $user->id)
       ->where('type', 'partial_contribution_made')
-      ->where('metadata->date', now($user->timezone)->format('Y-m-d'))
+      ->where('metadata->date', now()->timezone($user->timezone)->format('Y-m-d'))
       ->count();
 
     if ($partialPayments >= $group->max_allowed_partial_contributions) {
@@ -1012,7 +1011,7 @@ class ContributionService
       ->where('group_id', $group->id)
       ->whereIn('type', ['partial_contribution_made', 'contribution_made'])
       ->where('metadata->date', $contributionDate->toDateString()) // Check for duplicate using the exact date in metadata
-      ->whereNull('verified_at') // Ensure it's unverified
+      ->whereNull('metadata->verified_at') // Ensure it's unverified
       ->exists();
 
     if ($existingContributionFromActivity) {
@@ -1020,49 +1019,59 @@ class ContributionService
     }
   }
 
-  private function storeContributionData($group, $user, $validatedData, $contributionDate, $amount)
+  private function storeContributionData($group, $user, $validatedData, $contributionDate, $amount, $contributionStatus)
   {
+    $membership = GroupMember::where('user_id', $user->id)->where('group_id', $group->id)->first();
+
+    if ($contributionStatus['paid'])
+
     // Log the contribution in GroupActivity
     GroupActivity::create([
       'group_id' => $group->id,
       'user_id' => $user->id,
-      'type' => $amount < $group->required_amount ? 'partial_contribution_made' : 'contribution_made',
+      'type' => $amount < $group->contribution_amount ? 'partial_contribution_made' : 'contribution_made',
       'description' => 'User made a contribution.',
       'metadata' => [
         'amount' => $amount,
         'date' => $contributionDate,
-        'original_amount' => $validatedData['amount'], // If needed for record
+        'verified_at' => null,
+        'group_membership' => $membership,
+        'group' => $group->name,
+        'contribution_amount' => $validatedData['amount'], // If needed for record
       ],
     ]);
 
     // If the contribution is full, update the contributions table
-    if ($amount >= $group->required_amount) {
+    if ($amount >= $group->contribution_amount) {
       Contribution::create([
         'group_id' => $group->id,
-        'group_member_id' => $user->id,
+        'group_member_id' => $membership->id,
+        'user_id' => $user->id,
         'amount' => $amount,
         'contribution_date' => $contributionDate,
+        'status' => $contributionStatus['status'],
       ]);
+    } else {
+
+      $contribution = Contribution::create([
+        'group_member_id' => $membership->id,
+        'group_id' => $group->id,
+        'user_id' => Auth::id(),
+        'amount' => $validatedData['amount'],
+        'contribution_date' => $validatedData['contribution_date'],
+        'status' => $contributionStatus['status'],
+        'type' => $validatedData['type'] ?? 'regular',
+        'payment_method' => $validatedData['payment_method'] ?? null,
+        'transaction_reference' => $validatedData['transaction_reference'] ?? null,
+        'is_verified' => false, // Always start as unverified
+        'metadata' => $this->prepareContributionMetadata($group, $contributionStatus)
+      ]);
+
     }
-
-    $contribution = Contribution::create([
-      'group_member_id' => $user->id,
-      'group_id' => $group->id,
-      'user_id' => Auth::id(),
-      'amount' => $validatedData['amount'],
-      'contribution_date' => $validatedData['contribution_date'],
-      'status' => $contributionStatus['status'],
-      'type' => $validatedData['type'] ?? 'regular',
-      'payment_method' => $validatedData['payment_method'] ?? null,
-      'transaction_reference' => $validatedData['transaction_reference'] ?? null,
-      'is_verified' => false, // Always start as unverified
-      'metadata' => $this->prepareContributionMetadata($group, $contributionStatus)
-    ]);
-
     // Log the contribution in GroupActivity
     $this->activityService->log(
       $group,
-      $validatedData['amount'] < $group->required_amount ? 'partial_contribution_made' : 'contribution_made',
+      $validatedData['amount'] < $group->contribution_amount ? 'partial_contribution_made' : 'contribution_made',
       $user,
       null,
       [
@@ -1080,6 +1089,21 @@ class ContributionService
    */
   public function storeContribution(array $validatedData, Group $group, User $user, array $contributionStatus)
   {
+    // Check if penalty is required
+    $requiresPenalty = $this->penaltyCalculationService->requiresPenalty($group);
+
+    // If penalty is required, adjust the contribution amount
+    if ($requiresPenalty) {
+      $penaltyDetails = $this->penaltyCalculationService->calculatePenalty(
+        $group,
+        null,
+        $validatedData['amount']
+      );
+
+      // Ensure the contribution covers the penalty
+      $validatedData['amount'] += $penaltyDetails['total_penalty'];
+    }
+
     // Extract and validate the date and amount
     $contributionDate = Carbon::parse($validatedData['contribution_date']);
     $amount = $validatedData['amount'];
@@ -1094,8 +1118,136 @@ class ContributionService
     // Check if a contribution for this date already exists
     $this->checkDuplicateContribution($group, $user, $contributionDate);
 
+    // If the contribution type is 'penalty', add penalty fee
+    if ($validatedData['type'] === 'penalty') {
+      $penaltyFee = $this->calculatePenaltyFee($amount, $group);
+      $amount += $penaltyFee; // Add penalty fee to the contribution amount
+    }
+
     // Store the contribution if everything is valid
-    return $this->storeContributionData($group, $user, $validatedData, $contributionDate, $amount);
+    return $this->storeContributionData(
+      $group, $user, $validatedData, $contributionDate, $amount, $contributionStatus
+    );
+  }
+
+  private function calculatePenaltyFee(float $amount, $group): float
+  {
+    // Define your penalty calculation logic here
+    $penaltyRate = $group->penalty_fee_percentage; // Default is 5% (0.05)
+    return bcmul($amount, $penaltyRate, 2);
+  }
+
+  /**
+   * Determine if a contribution is overdue
+   */
+  public function isContributionOverdue(Group $group, Carbon $contributionDate): bool
+  {
+    // Determine the contribution period
+    $currentMonth = $contributionDate->month;
+    $currentYear = $contributionDate->year;
+
+    // Calculate the contribution deadline
+    $contributionDeadline = $contributionDate->endOfMonth()->endOfDay();
+
+    // Calculate the next month's tolerance deadline
+    $toleranceDeadline = Carbon::create($currentYear, $currentMonth, $group->allow_contributions_until)
+      ->addMonth()
+      ->endOfDay();
+
+    // Check if the contribution is beyond the current month's deadline
+    return now()->isAfter($contributionDeadline) && now()->isBefore($toleranceDeadline);
+  }
+
+  /**
+   * Calculate remaining balance and penalty for a contribution
+   */
+  public function calculateContributionDetails(Group $group, User $user): array
+  {
+    // Find the most recent contribution for this group and user
+    $latestContribution = Contribution::where('user_id', $user->id)
+      ->where('group_id', $group->id)
+      ->orderByDesc('contribution_date')
+      ->first();
+
+    // Default contribution amount
+    $requiredAmount = $group->contribution_amount;
+    $remainingBalance = $requiredAmount;
+    $penaltyFee = 0;
+    $isOverdue = false;
+
+    // If there's a previous contribution
+    if ($latestContribution) {
+      // Check if there's a remaining balance from previous partial payment
+      if ($latestContribution->status === 'partial') {
+        $remainingBalance = bcsub($requiredAmount, $latestContribution->amount, 2);
+      }
+
+      // Check if the contribution is overdue
+      $isOverdue = $this->isContributionOverdue($group, $latestContribution->contribution_date);
+    }
+
+    // Calculate penalty if overdue
+    if ($isOverdue) {
+      $penaltyFee = $this->calculatePenaltyFee($requiredAmount, $group);
+      $remainingBalance = bcadd($remainingBalance, $penaltyFee, 2);
+    }
+
+    // Check if penalty is required
+    $penaltyDetails = $this->penaltyCalculationService->calculatePenalty(
+      $group,
+      $latestContribution,
+      $group->contribution_amount
+    );
+
+    return [
+      'required_amount' => $requiredAmount,
+      'remaining_balance' => $remainingBalance,
+      'penalty_fee' => $penaltyFee,
+      'is_overdue' => $isOverdue,
+      'penalty_details' => $penaltyDetails
+    ];
+  }
+
+  /**
+   * Validate contribution amount
+   */
+  public function validateContributionAmount(
+    Group $group,
+    User $user,
+    float $enteredAmount,
+    string $contributionType
+  ): array {
+    // Get contribution details
+    $contributionDetails = $this->calculateContributionDetails($group, $user);
+
+    // Validate contribution amount
+    $isValidAmount = bccomp(
+        $enteredAmount,
+        $contributionDetails['remaining_balance'],
+        2
+      ) >= 0;
+
+    // Determine contribution status
+    $status = match(true) {
+      $isValidAmount && $enteredAmount == $contributionDetails['remaining_balance'] => 'paid',
+      $isValidAmount && $enteredAmount > $contributionDetails['remaining_balance'] => 'overpaid',
+      !$isValidAmount => 'partial',
+      default => 'failed'
+    };
+
+    return [
+      'is_valid' => $isValidAmount,
+      'status' => $status,
+      'contribution_details' => $contributionDetails,
+      'entered_amount' => $enteredAmount,
+      'message' => match($status) {
+        'paid' => 'Full contribution received.',
+        'overpaid' => 'Overpayment detected. Excess amount will be noted.',
+        'partial' => 'Partial contribution received.',
+        'failed' => 'Contribution amount is insufficient.',
+        default => 'Contribution processing error.'
+      }
+    ];
   }
 }
 

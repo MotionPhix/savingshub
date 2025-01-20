@@ -117,6 +117,7 @@ class GroupMember extends Model
   public function addCustomPermission(string $permission)
   {
     $permissions = $this->custom_permissions ?? [];
+
     if (!in_array($permission, $permissions)) {
       $permissions[] = $permission;
       $this->custom_permissions = $permissions;
@@ -127,6 +128,7 @@ class GroupMember extends Model
   public function removeCustomPermission(string $permission)
   {
     $permissions = $this->custom_permissions ?? [];
+
     $this->custom_permissions = array_diff($permissions, [$permission]);
     $this->save();
   }

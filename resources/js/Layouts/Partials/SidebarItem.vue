@@ -41,7 +41,7 @@ const classes = computed(() =>
       <Badge
         v-if="badge"
         variant="secondary"
-        class="ml-auto">
+        class="ml-auto w-5 h-5 items-center justify-center flex">
         {{ badge }}
       </Badge>
     </Link>

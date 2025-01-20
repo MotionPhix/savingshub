@@ -8,7 +8,6 @@ use App\Models\GroupActivity;
 use App\Models\GroupMember;
 use App\Notifications\NewContributionNotification;
 use App\Services\ContributionService;
-use App\Services\GroupActivityService;
 use App\Services\GroupService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -23,12 +22,9 @@ use Illuminate\Validation\ValidationException;
 class ContributionController extends Controller
 {
   public function __construct(
-    protected GroupActivityService $activityService,
-    protected ContributionService  $contributionService,
-    protected GroupService         $groupService
-  )
-  {
-  }
+    protected ContributionService $contributionService,
+    protected GroupService $groupService
+  ) {}
 
   public function index(Request $request)
   {
@@ -218,7 +214,6 @@ class ContributionController extends Controller
 
     // User roles handling
     $userRoles = [];
-
     if ($groupMember) {
       // If using a roles relationship
       if ($groupMember->roles) {
@@ -244,78 +239,36 @@ class ContributionController extends Controller
     $activeGroupId = session('active_group_id');
     $activeGroup = Group::findOrFail($activeGroupId);
 
+    $percentage = $activeGroup->allowed_partial_percentage * 100;
+    $total = Number::currency($activeGroup->contribution_amount, in: $activeGroup->settings['currency']);
+
     // Calculate contribution details for context
     $contributionDetails = $this->contributionService->calculateContributionDetails(
       $activeGroup,
       $request->user()
     );
 
-    // Check partial contribution history
-    $partialContributionsCount = Contribution::where('user_id', $request->user()->id)
-      ->where('group_id', $activeGroupId)
-      ->where('status', 'partial')
-      ->whereMonth('contribution_date', now()->month)
-      ->whereYear('contribution_date', now()->year)
-      ->count();
-
-    // Calculate minimum and maximum allowed contribution amounts
-    $requiredAmount = $activeGroup->contribution_amount;
-    $minPartialAmount = bcmul($requiredAmount, $activeGroup->allowed_partial_percentage, 2);
-    $remainingBalance = $contributionDetails['remaining_balance'];
-
     // Validate the request
     $validatedData = $request->validate([
       'amount' => [
         'required',
         'numeric',
-        function ($attribute, $value, $fail) use (
-          $activeGroup,
-          $requiredAmount,
-          $minPartialAmount,
-          $remainingBalance,
-          $partialContributionsCount,
-          $contributionDetails
-        ) {
-          // Check if the amount is at least the minimum partial amount
-          if (bccomp($value, $minPartialAmount, 2) < 0) {
-            $fail("The contribution amount must be at least " .
-              Number::currency($minPartialAmount, in: $activeGroup->settings['currency'] ?? 'MWK') .
-              " (" . ($activeGroup->allowed_partial_percentage * 100) . "% of the required amount)."
-            );
-          }
+        function ($attribute, $value, $fail) use ($activeGroup, $percentage, $total, $contributionDetails) {
+          // Validate against remaining balance and minimum contribution
+          $remainingBalance = $contributionDetails['remaining_balance'];
 
-          // Check if the amount covers the remaining balance
-          if (bccomp($value, $remainingBalance, 2) < 0) {
-            // Check if this is the last allowed partial contribution
-            if ($partialContributionsCount >= $activeGroup->max_allowed_partial_contributions - 1) {
-              $fail("Your final contribution must cover the full remaining balance of " .
-                Number::currency($remainingBalance, in: $activeGroup->settings['currency']) .
-                ($contributionDetails['is_overdue'] ? " including penalty" : "")
-              );
-            }
+          // Calculate the minimum required amount based on the percentage
+          $minAmount = bcmul($activeGroup->contribution_amount, $activeGroup->allowed_partial_percentage, 2);
+
+          if (bccomp($value, $minAmount, 2) < 0) {
+            $fail("The {$attribute} must be at least {$percentage}% of the required amount ({$total}).");
           }
         },
       ],
       'contribution_date' => [
         'required',
         'date',
-        function ($attribute, $value, $fail) use ($activeGroup) {
-          // Check contribution date against allowed contributions period
-          $contributionDate = Carbon::parse($value);
-          $currentMonth = now()->month;
-          $currentYear = now()->year;
-
-          // Calculate next month's tolerance deadline
-          $toleranceDeadline = Carbon::create($currentYear, $currentMonth, $activeGroup->allow_contributions_until)
-            ->addMonth()
-            ->endOfDay();
-
-          // Validate contribution date
-          if ($contributionDate->isAfter($toleranceDeadline)) {
-            $fail("Contribution date is beyond the allowed contribution period.");
-          }
-        },
-        'before_or_equal:' . now()->timezone($request->user()->timezone)->format('Y-m-d')
+        'before_or_equal:' . now($request->user()->timezone)->format('Y-m-d')
       ],
       'type' => [
         'sometimes',
@@ -337,71 +290,35 @@ class ContributionController extends Controller
       ->firstOrFail();
 
     try {
-      // Calculate contribution status
-      $contributionStatus = $this->contributionService->calculateContributionStatus(
-        $activeGroup,
-        $validatedData['amount'],
-        $request->user(),
-        $validatedData['type']
-      );
+      // Validate contribution state (ensure no issues with prior transactions)
+      $this->contributionService
+        ->validateContributionState(
+          $groupMember,
+          $activeGroup
+        );
 
-      // Check if contribution status is valid
-      if ($contributionStatus['status'] === 'failed') {
-        throw new \Exception($contributionStatus['message']);
-      }
-
-      // Prepare contribution data
-      $contributionData = [
-        'group_member_id' => $groupMember->id,
-        'group_id' => $activeGroup->id,
-        'user_id' => $request->user()->id,
-        'amount' => $validatedData['amount'],
-        'contribution_date' => $validatedData['contribution_date'],
-        'status' => $contributionStatus['status'],
-        'type' => $validatedData['type'],
-        'payment_method' => $validatedData['payment_method'] ?? null,
-        'transaction_reference' => $validatedData['transaction_reference'] ?? null,
-        'metadata' => [
-          'contribution_details' => $contributionStatus['contribution_details'],
-          'is_overdue' => $contributionStatus['contribution_details']['is_overdue']
-        ]
-      ];
+      // Determine contribution status and type
+      $contributionStatus = $this->contributionService
+        ->calculateContributionStatus(
+          $activeGroup,
+          $validatedData['amount']
+        );
 
       // Create contribution
-      $contribution = $this->contributionService->storeContribution(
-        $contributionData,
-        $activeGroup,
-        $request->user(),
-        $contributionStatus
-      );
-
-      // Log group activity
-      $this->activityService->log(
-        $activeGroup,
-        $contributionStatus['status'],
-        $request->user(),
-        null,
-        [
-          'amount' => $validatedData['amount'],
-          'contribution_type' => $validatedData['type'],
-          'status' => $contributionStatus['status'],
-          'group' => [
-            'id' => $activeGroup->id,
-            'uuid' => $activeGroup->uuid,
-            'name' => $activeGroup->name,
-            'penalty_fee_percentage' => $activeGroup->penalty_fee_percentage,
-            'max_allowed_partial_contributions' => $activeGroup->contribution_amount,
-            'contribution_amount' => $activeGroup->contribution_amount,
-          ]
-        ]
-      );
+      $contribution = $this->contributionService
+        ->storeContribution(
+          $validatedData,
+          $activeGroup,
+          $request->user(),
+          $contributionStatus
+        );
 
       // Notify group admins about the new contribution
       $this->notifyGroupAdmins($contribution);
 
       return redirect()
         ->route('contributions.index')
-        ->with('success', $contributionStatus['message']);
+        ->with('flush', $contributionStatus['message']);
 
     } catch (\Exception $e) {
       Log::error('Contribution creation failed', [
@@ -431,7 +348,9 @@ class ContributionController extends Controller
       ->where('group_id', $contribution->group_id)
       ->first();
 
-    $isAdminOrTreasurer = $groupMember && in_array($groupMember->role, ['admin', 'treasurer']);
+    $isAdminOrTreasurer = $groupMember
+      ? in_array($groupMember->role, ['admin', 'treasurer'])
+      : false;
 
     // Ensure user can only view their own contribution or has admin/treasurer access
     if (!$isAdminOrTreasurer && $contribution->user_id !== Auth::id()) {
@@ -469,9 +388,10 @@ class ContributionController extends Controller
       });
   }
 
-  // Verification Method
-  public function verify(Request $request, $contribution)
+// Verification Method
+  public function verify(Request $request, $uuid)
   {
+    $contribution = Contribution::where('uuid', $uuid)->firstOrFail();
     $group = $contribution->group;
 
     // Validate admin password

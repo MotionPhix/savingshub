@@ -33,7 +33,7 @@ class HandleInertiaRequests extends Middleware
   {
     $cwg = session('active_group_id')
       ? \App\Models\Group::where('id', session('active_group_id'))
-        ->first(['id', 'uuid', 'name', 'settings'])
+        ->first(['id', 'uuid', 'name', 'settings', 'contribution_amount'])
       : null;
 
     // Find the current user's membership in the group
@@ -66,9 +66,9 @@ class HandleInertiaRequests extends Middleware
         'id' => $cwg?->id,
         'uuid' => $cwg?->uuid,
         'name' => $cwg?->name,
-        'currency' => $cwg?->settings['currency'],
+        'currency' => $cwg?->settings['currency'] ?? 'MWK',
         'current_role' => $currentUserMembership?->role,
-        'contribution_amount' => $cwg->contribution_amount,
+        'contribution_amount' => $cwg?->contribution_amount,
       ])
     ];
   }

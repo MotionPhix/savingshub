@@ -90,7 +90,7 @@ const handleMemberAction = (action) => {
             <TableHead>Total Contributions</TableHead>
             <TableHead>Total Loans</TableHead>
             <TableHead>Joined Date</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead />
           </TableRow>
         </TableHeader>
 
@@ -116,15 +116,17 @@ const handleMemberAction = (action) => {
               {{ formatCurrency(member.loan_stats.total_borrowed) }}
             </TableCell>
             <TableCell>{{ member?.joined_at }}</TableCell>
-            <TableCell>
+            <TableCell align="end">
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                   <Button variant="ghost" size="icon">
                     <MoreVerticalIcon class="h-4 w-4"/>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+
+                <DropdownMenuContent align="end" :side-offset="-24">
                   <DropdownMenuItem
+                    :disabled="true"
                     v-for="action in memberActions.filter(a => !a.requireManagePermission || canManage)"
                     :key="action.label"
                     @click="handleMemberAction(action)">
