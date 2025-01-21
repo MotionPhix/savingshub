@@ -11,6 +11,7 @@ use App\Services\ContributionService;
 use App\Services\GroupActivityService;
 use App\Services\GroupService;
 use Carbon\Carbon;
+use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -440,13 +441,14 @@ class ContributionController extends Controller
 
     // Prepare additional metadata
     $contribution->metadata = array_merge($contribution->metadata ?? [], [
-      'activity_log' => $this->getContributionActivityLog($contribution)
+      'activity_log' => $this->getContributionActivityLog($contribution),
+      'next_contribution_date' => $this->calculateNextContributionDate($contribution, $groupMember)
     ]);
 
     return Inertia('Contributions/Show', [
       'contribution' => $contribution,
       'group' => $contribution->group,
-      'currentUserRole' => $groupMember->role ?? 'member',
+      'currentUser Role' => $groupMember->role ?? 'member',
       'isAdminOrTreasurer' => $isAdminOrTreasurer
     ]);
   }
@@ -469,9 +471,9 @@ class ContributionController extends Controller
       });
   }
 
-  // Verification Method
-  public function verify(Request $request, $contribution)
+  public function verify(Request $request, $uuid)
   {
+    $contribution = Contribution::where('uuid', $uuid)->firstOrFail();
     $group = $contribution->group;
 
     // Validate admin password
@@ -527,7 +529,6 @@ class ContributionController extends Controller
     return back()->with('success', 'Contribution verified successfully');
   }
 
-// Delete Method
   public function destroy(Request $request, $uuid)
   {
     $contribution = Contribution::where('uuid', $uuid)->firstOrFail();
@@ -577,6 +578,29 @@ class ContributionController extends Controller
     return redirect()
       ->route('contributions.index')
       ->with('success', 'Contribution deleted successfully');
+  }
+
+  protected function calculateNextContributionDate(Contribution $contribution, GroupMember $groupMember)
+  {
+    // Logic to calculate the next contribution date based on the group's contribution frequency
+    $lastContributionDate = new DateTime($contribution->contribution_date);
+    $nextDate = clone $lastContributionDate;
+
+    switch ($groupMember->group->contribution_frequency) {
+      case 'monthly':
+        $nextDate->modify('+1 month');
+        break;
+      case 'weekly':
+        $nextDate->modify('+1 week');
+        break;
+      case 'quarterly':
+        $nextDate->modify('+3 months');
+        break;
+      default:
+        return null;
+    }
+
+    return $nextDate->format('Y-m-d');
   }
 
   /**

@@ -513,3 +513,150 @@ class ContributionController extends Controller
     Notification::send($admins, new NewContributionNotification($contribution));
   }
 }
+
+
+
+
+
+public function show($uuid)
+  {
+    $contribution = Contribution::with([
+      'user:id,name,uuid',
+      'group',
+      'groupMember'
+    ])->where('uuid', $uuid)->firstOrFail();
+
+    // Check user's role in the group
+    $groupMember = GroupMember::where('user_id', Auth::id())
+      ->where('group_id', $contribution->group_id)
+      ->first();
+
+    $isAdminOrTreasurer = $groupMember && in_array($groupMember->role, ['admin', 'treasurer']);
+
+    // Ensure user can only view their own contribution or has admin/treasurer access
+    if (!$isAdminOrTreasurer && $contribution->user_id !== Auth::id()) {
+      abort(403, 'Unauthorized access');
+    }
+
+    // Prepare additional metadata
+    $contribution->metadata = array_merge($contribution->metadata ?? [], [
+      'activity_log' => $this->getContributionActivityLog($contribution)
+    ]);
+
+    return Inertia('Contributions/Show', [
+      'contribution' => $contribution,
+      'group' => $contribution->group,
+      'currentUserRole' => $groupMember->role ?? 'member',
+      'isAdminOrTreasurer' => $isAdminOrTreasurer
+    ]);
+  }
+
+  // Verification Method
+  public function verify(Request $request, $contribution)
+  {
+    $group = $contribution->group;
+
+    // Validate admin password
+    if (!Hash::check($request->admin_password, Auth::user()->password)) {
+      throw ValidationException::withMessages([
+        'admin_password' => 'Invalid admin password'
+      ]);
+    }
+
+    // If group requires group approval, validate treasurer password
+    if ($group->require_group_approval) {
+      $treasurer = GroupMember::where('group_id', $group->id)
+        ->where('role', 'treasurer')
+        ->first();
+
+      if (!$treasurer || !Hash::check($request->treasurer_password, $treasurer->user->password)) {
+        throw ValidationException::withMessages([
+          'treasurer_password' => 'Invalid treasurer password'
+        ]);
+      }
+    }
+
+    // Begin transaction for atomic update
+    DB::transaction(function () use ($contribution, $request) {
+      // Update contribution status
+      $contribution->update([
+        'status' => $request->status,
+        'is_verified' => true,
+        'metadata' => array_merge($contribution->metadata ?? [], [
+          'verification_notes' => $request->notes,
+          'verified_by' => Auth::id(),
+          'verification_timestamp' => now()
+        ])
+      ]);
+
+      // Log verification activity
+      GroupActivity::create([
+        'group_id' => $contribution->group_id,
+        'user_id' => Auth::id(),
+        'type' => 'contribution_verified',
+        'description' => 'Contribution verified',
+        'changes' => [
+          'previous_status' => $contribution->getOriginal('status'),
+          'new_status' => $request->status
+        ],
+        'metadata' => [
+          'contribution_id' => $contribution->id,
+          'verified_by' => Auth::id()
+        ]
+      ]);
+    });
+
+    return back()->with('success', 'Contribution verified successfully');
+  }
+
+// Delete Method
+  public function destroy(Request $request, $uuid)
+  {
+    $contribution = Contribution::where('uuid', $uuid)->firstOrFail();
+    $group = $contribution->group;
+
+    // Validate admin password
+    if (!Hash::check($request->admin_password, Auth::user()->password)) {
+      throw ValidationException::withMessages([
+        'admin_password' => 'Invalid admin password'
+      ]);
+    }
+
+    // If group requires group approval, validate treasurer password
+    if ($group->require_group_approval) {
+      $treasurer = GroupMember::where('group_id', $group->id)
+        ->where('role', 'treasurer')
+        ->first();
+
+      if (!$treasurer || !Hash::check($request->treasurer_password, $treasurer->user->password)) {
+        throw ValidationException::withMessages([
+          'treasurer_password' => 'Invalid treasurer password'
+        ]);
+      }
+    }
+
+    // Begin transaction for atomic delete
+    DB::transaction(function () use ($contribution) {
+      // Log deletion activity before deleting
+      GroupActivity::create([
+        'group_id' => $contribution->group_id,
+        'user_id' => Auth::id(),
+        'type' => 'contribution_deleted',
+        'description' => 'Contribution deleted',
+        'changes' => [
+          'contribution_details' => $contribution->toArray()
+        ],
+        'metadata' => [
+          'contribution_id' => $contribution->id,
+          'deleted_by' => Auth::id()
+        ]
+      ]);
+
+      // Soft delete the contribution
+      $contribution->delete();
+    });
+
+    return redirect()
+      ->route('contributions.index')
+      ->with('success', 'Contribution deleted successfully');
+  }

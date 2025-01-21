@@ -2,14 +2,13 @@
 import { ref, computed } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import {
+  CheckCircleIcon,
+  XCircleIcon,
+  EditIcon,
+  TrashIcon,
   CreditCardIcon,
   CalendarIcon,
   WalletIcon,
-  CheckCircleIcon,
-  EditIcon,
-  TrashIcon,
-  MessageCircleIcon,
-  AlertTriangleIcon,
 } from 'lucide-vue-next'
 
 import AppLayout from "@/Layouts/AppLayout.vue"
@@ -50,7 +49,7 @@ import { Badge } from "@/Components/ui/badge"
 import { toast } from "vue-sonner"
 import { formatCurrency } from "@/lib/formatters"
 
-// Enhanced Props
+// Props from Backend
 const props = defineProps({
   contribution: {
     type: Object,
@@ -67,130 +66,16 @@ const props = defineProps({
   isAdminOrTreasurer: {
     type: Boolean,
     default: false
-  },
-  memberContributionStatus: {
-    type: Object,
-    default: () => ({})
   }
 })
 
 // State Management
 const isVerifyDialogOpen = ref(false)
 const isDeleteDialogOpen = ref(false)
-const isQueryDialogOpen = ref(false)
-const isStatusUpdateDialogOpen = ref(false)
-
-// Passwords and Verification
 const adminPassword = ref('')
 const treasurerPassword = ref('')
-const secondApproverPassword = ref('')
-
-// Contribution Query State
-const queryTitle = ref('')
-const queryDescription = ref('')
-
-// Contribution Status Update
-const newStatus = ref(props.contribution.status)
-const statusUpdateNotes = ref('')
-
-// Computed Properties
-const contributionBalanceDetails = computed(() => {
-  if (!props.memberContributionStatus) return null
-
-  return {
-    totalRequired: formatCurrency(props.group.contribution_amount),
-    totalPaid: formatCurrency(props.memberContributionStatus.total_paid),
-    remainingBalance: formatCurrency(
-      Math.max(0, props.group.contribution_amount - props.memberContributionStatus.total_paid)
-    ),
-    isFullyPaid: props.memberContributionStatus.total_paid >= props.group.contribution_amount
-  }
-})
-
-// Advanced Verification Method
-function verifyContribution() {
-  // Validate two-factor verification based on group settings
-  const verificationRequirements = {
-    'admin_treasurer': {
-      primaryRole: 'admin',
-      secondaryRole: 'treasurer'
-    },
-    'admin_secretary': {
-      primaryRole: 'admin',
-      secondaryRole: 'secretary'
-    }
-  }
-
-  const requiredVerification = verificationRequirements[props.group.verification_method]
-
-  if (!requiredVerification) {
-    toast.error('Invalid verification method configured')
-    return
-  }
-
-  router.post(route('contributions.verify', props.contribution.uuid), {
-    status: newStatus.value,
-    notes: statusUpdateNotes.value,
-    primary_password: adminPassword.value,
-    secondary_password: secondApproverPassword.value,
-    primary_role: requiredVerification.primaryRole,
-    secondary_role: requiredVerification.secondaryRole
-  }, {
-    onSuccess: () => {
-      toast.success('Contribution verified successfully')
-      isVerifyDialogOpen.value = false
-    },
-    onError: (errors) => {
-      toast.error(errors.message || 'Verification failed')
-    }
-  })
-}
-
-// Submit Contribution Query
-function submitContributionQuery() {
-  router.post(route('contributions.query', props.contribution.uuid), {
-    title: queryTitle.value,
-    description: queryDescription.value
-  }, {
-    onSuccess: () => {
-      toast.success('Query submitted successfully')
-      isQueryDialogOpen.value = false
-      queryTitle.value = ''
-      queryDescription.value = ''
-    }
-  })
-}
-
-// Contribution Deletion with Two-Factor Verification
-function deleteContribution() {
-  const verificationRequirements = {
-    'admin_treasurer': {
-      primaryRole: 'admin',
-      secondaryRole: 'treasurer'
-    },
-    'admin_secretary': {
-      primaryRole: 'admin',
-      secondaryRole: 'secretary'
-    }
-  }
-
-  const requiredVerification = verificationRequirements[props.group.verification_method]
-
-  router.delete(route('contributions.destroy', props.contribution.uuid), {
-    primary_password: adminPassword.value,
-    secondary_password: secondApproverPassword.value,
-    primary_role: requiredVerification.primaryRole,
-    secondary_role: requiredVerification.secondaryRole
-  }, {
-    onSuccess: () => {
-      toast.success('Contribution deleted successfully')
-      router.visit(route('contributions.index'))
-    },
-    onError: (errors) => {
-      toast.error(errors.message || 'Deletion failed')
-    }
-  })
-}
+const verificationStatus = ref(props.contribution.status)
+const verificationNotes = ref('')
 
 // Computed Properties
 const contributionStatusVariants = computed(() => ({
@@ -267,7 +152,7 @@ function calculateNextContributionDate() {
   return nextDate
 }
 
-/*function verifyContribution() {
+function verifyContribution() {
   // Validate passwords if group requires approval
   if (props.group.require_group_approval && !treasurerPassword.value) {
     toast.error('Treasurer password is required for verification')
@@ -303,7 +188,7 @@ function deleteContribution() {
       toast.error(errors.message || 'Deletion failed')
     }
   })
-}*/
+}
 </script>
 
 <template>
@@ -580,249 +465,6 @@ function deleteContribution() {
           </div>
           <div v-else class="text-muted-foreground text-center py-4">
             No activity logged for this contribution
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- Member Contribution Balance Section -->
-      <Card v-if="!isAdminOrTreasurer && contributionBalanceDetails">
-        <CardHeader>
-          <CardTitle>Contribution Balance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="grid md:grid-cols-2 gap-4">
-            <div class="bg-muted/50 p-4 rounded-lg">
-              <h3 class="text-sm text-muted-foreground">Total Required</h3>
-              <div class="text-lg font-bold">
-                {{ contributionBalanceDetails.totalRequired }}
-              </div>
-            </div>
-            <div class="bg-muted/50 p-4 rounded-lg">
-              <h3 class="text-sm text-muted-foreground">Total Paid</h3>
-              <div class="text-lg font-bold">
-                {{ contributionBalanceDetails.totalPaid }}
-              </div>
-            </div>
-            <div class="bg-muted/50 p-4 rounded-lg">
-              <h3 class="text-sm text-muted-foreground">Remaining Balance</h3>
-              <div
-                :class="`text-lg font-bold ${contributionBalanceDetails.isFullyPaid ? 'text-green-600' : 'text-red-600'}`"
-              >
-                {{ contributionBalanceDetails.remainingBalance }}
-              </div>
-            </div>
-            <div class="bg-muted/50 p-4 rounded-lg">
-              <h3 class="text-sm text-muted-foreground">Payment Status</h3>
-              <Badge
-                :variant="contributionBalanceDetails.isFullyPaid ? 'success' : 'warning'"
-              >
-                {{ contributionBalanceDetails.isFullyPaid ? 'Fully Paid' : 'Partial Payment' }}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- Member Query Section -->
-      <Card v-if="!isAdminOrTreasurer">
-        <CardHeader>
-          <CardTitle>Have a Question?</CardTitle>
-          <CardDescription>
-            If you have any issues or queries about this contribution
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button @click="isQueryDialogOpen = true" variant="outline">
-            <MessageCircleIcon class="mr-2 h-4 w-4" />
-            Submit a Query
-          </Button>
-        </CardContent>
-      </Card>
-
-      <!-- Query Dialog -->
-      <Dialog v-model:open="isQueryDialogOpen">
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Submit Contribution Query</DialogTitle>
-            <DialogDescription>
-              Describe your concern about this contribution
-            </DialogDescription>
-          </DialogHeader>
-          <form @submit.prevent="submitContributionQuery" class="space-y-4">
-            <FormField>
-              <FormLabel>Query Title</FormLabel>
-              <FormControl>
-                <Input
-                  v-model="queryTitle"
-                  required
-                  placeholder="Briefly describe your query"
-                />
-              </FormControl>
-            </FormField>
-
-            <FormField>
-              <FormLabel>Detailed Description</FormLabel>
-              <FormControl>
-                <textarea
-                  v-model="queryDescription"
-                  rows="4"
-                  class="w-full border rounded-md p-2"
-                  placeholder="Provide more details about your concern"
-                  required
-                ></textarea>
-              </FormControl>
-            </FormField>
-
-            <DialogFooter>
-              <Button type="submit" variant="default">
-                Submit Query
-              </Button>
-              <DialogClose as-child>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <!-- Two-Factor Verification Dialog -->
-      <Dialog v-model:open="isVerifyDialogOpen">
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Verify Contribution</DialogTitle>
-            <DialogDescription>
-              This contribution requires verification from two senior members
-            </DialogDescription>
-          </DialogHeader>
-
-          <form @submit.prevent="verifyContribution" class="space-y-4">
-            <div class="flex items-center space-x-2 bg-muted/50 p-3 rounded-lg">
-              <AlertTriangleIcon class="h-5 w-5 text-yellow-500" />
-              <span class="text-sm">
-                Verification requires approval from
-                {{ group.verification_method === 'admin_treasurer'
-                ? 'Admin and Treasurer'
-                : 'Admin and Secretary'
-                }}
-              </span>
-            </div>
-
-            <FormField>
-              <FormLabel>Admin Password</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  v-model="adminPassword"
-                  required
-                  placeholder="Enter admin password"
-                />
-              </FormControl>
-            </FormField>
-
-            <FormField>
-              <FormLabel>
-                {{
-                  group.verification_method === 'admin_treasurer'
-                    ? 'Treasurer Password'
-                    : 'Secretary Password'
-                }}
-              </FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  v-model="secondApproverPassword"
-                  required
-                  placeholder="Enter second approver's password"
-                />
-              </FormControl>
-            </FormField>
-
-            <FormField>
-              <FormLabel>Verification Status</FormLabel>
-              <Select v-model="newStatus">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select new status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="partial">Partial</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-
-            <FormField>
-              <FormLabel>Verification Notes</FormLabel>
-              <FormControl>
-                <Input
-                  v-model="statusUpdateNotes"
-                  placeholder="Additional verification notes"
-                />
-              </FormControl>
-            </FormField>
-
-            <DialogFooter>
-              <Button type="submit" variant="default">
-                Verify Contribution
-              </Button>
-              <DialogClose as-child>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <!-- Comprehensive Contribution Queries Section -->
-      <Card>
-        <CardHeader>
-          <CardTitle>Contribution Queries</CardTitle>
-          <CardDescription>
-            Queries and discussions related to this contribution
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div
-            v-if="contribution.queries && contribution.queries.length"
-            class="space-y-4"
-          >
-            <div
-              v-for="query in contribution.queries"
-              :key="query.id"
-              class="border rounded-lg p-4"
-            >
-              <div class="flex justify-between items-center mb-2">
-                <h3 class="font-semibold">{{ query.title }}</h3>
-                <Badge :variant="query.status === 'resolved' ? 'success' : 'warning'">
-                  {{ query.status }}
-                </Badge>
-              </div>
-              <p class="text-muted-foreground">{{ query.description }}</p>
-              <div class="text-xs text-muted-foreground mt-2">
-                Submitted on {{ new Date(query.created_at).toLocaleString() }}
-                {{ query.response ? ' - Responded' : '' }}
-              </div>
-
-              <!-- Query Response (if exists) -->
-              <div
-                v-if="query.response"
-                class="mt-4 bg-muted/50 p-3 rounded-lg"
-              >
-                <h4 class="font-medium">Response:</h4>
-                <p>{{ query.response }}</p>
-                <div class="text-xs text-muted-foreground mt-1">
-                  Responded by {{ query.responder_name }}
-                  on {{ new Date(query.responded_at).toLocaleString() }}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            v-else
-            class="text-center text-muted-foreground py-4"
-          >
-            No queries have been submitted for this contribution
           </div>
         </CardContent>
       </Card>
