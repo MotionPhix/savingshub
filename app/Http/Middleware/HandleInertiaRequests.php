@@ -47,8 +47,8 @@ class HandleInertiaRequests extends Middleware
       ...parent::share($request),
       'auth' => [
         'user' => fn() => ([
-          ...$request->user()?->only(['name', 'gender', 'avatar', 'account_status', 'locale', 'timezone']),
-          'groups_count' => $request->user()->withCount('groups')->first()->groups_count ?? 0,
+          $request->user()?->only(['name', 'gender', 'avatar', 'account_status', 'locale', 'timezone']),
+          'groups_count' => $request->user()?->withCount('groups')->first()->groups_count ?? 0,
         ]),
         'can' => [
           'create_group' => fn() => $request->user()?->canCreateGroup(),
